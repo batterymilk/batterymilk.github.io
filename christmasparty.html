@@ -326,9 +326,6 @@
 	#member-template {
 		display: none;
 	}
-	#description {
-		margin-bottom: 16px;
-	}
 	.party {
 		border: 3px double silver;
 		padding: 2px;
@@ -406,93 +403,105 @@
 	#new-party {
 		margin-top: 32px;
 	}
-	#credit {
-		margin-top: 32px;
-		font-size: 10pt;
-	}
 	.flex-container {
 		display: flex;
 		justify-content: space-around;
 	}
+	#page-header {
+		margin-bottom: 16px;
+	}
+	#page-footer {
+		margin-top: 24px;
+		font-size: 10pt;
+	}
+	#page-footer > div {
+		margin-top: 4px;
+	}
 </style>
 </head>
 <body>
+<div id="page-header">
+	<div class="description">&#150; See just how many socks you can expect to get with different parties in the Almost Weekly Santa Alter 2017 event &#150;</div>
+</div>
+<div id="member-template" class="member">
+	<div class="support heading"></div>
+	<div class="servant">
+		<div class="subheading">Servant</div>
+		<div><select><option></option></select></div>
+		<div class="details">
+			<div class="cost"><div>Cost:</div><div class="number"></div></div>
+			<div class="sock-bonus"><div>Sock Bonus:</div><div class="number"></div></div>
+		</div>
+	</div>
+	<div class="spacer"></div>
+	<div class="craft-essence">
+		<div class="subheading">Craft Essence</div>
+		<div><select><option></option></select></div>
+		<div class="details">
+			<div class="cost"><div>Cost:</div><div class="number"></div></div>
+			<div class="box-chance"><div>Bonus Box:</div><div class="percentage"></div></div>
+		</div>
+	</div>
+</div>
+<div id="party-template" class="party">
+	<div class="commands"><span class="clone">clone</span><span class="delet-this">&#215;</span></div>
+	<div class="members flex-container"></div>
+	<div class="totals">
+		<div class="heading">Totals</div>
+		<div class="flex-container">
+			<div class="cost">Cost: <span class="number"></span></div>
+			<div class="sock-bonus">Sock Bonus: <span class="number"></span></div>
+			<div class="box-chance">Bonus Box Chance: <span class="percentage"></span></div>
+		</div>
+	</div>
+	<div class="yields">
+		<div class="heading">Average Yields</div>
+		<div class="flex-container">
+			<div class="quest-10">
+				<div class="subheading">10 AP</div>
+				<div class="details">
+					<div class="count"><div>Socks:</div><div class="number"></div></div>
+					<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+				</div>
+			</div>
+			<div class="quest-20">
+				<div class="subheading">20 AP</div>
+				<div class="details">
+					<div class="count"><div>Socks:</div><div class="number"></div></div>
+					<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+				</div>
+			</div>
+			<div class="quest-30">
+				<div class="subheading">30 AP</div>
+				<div class="details">
+					<div class="count"><div>Socks:</div><div class="number"></div></div>
+					<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+				</div>
+			</div>
+			<div class="quest-40">
+				<div class="subheading">40 AP</div>
+				<div class="details">
+					<div class="count"><div>Socks:</div><div class="number"></div></div>
+					<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+				</div>
+			</div>
+			<div class="quest-50">
+				<div class="subheading">50 AP</div>
+				<div class="details">
+					<div class="count"><div>Socks:</div><div class="number"></div></div>
+					<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
 <div id="page-content">
-	<div id="member-template" class="member">
-		<div class="support heading"></div>
-		<div class="servant">
-			<div class="subheading">Servant</div>
-			<div><select><option></option></select></div>
-			<div class="details">
-				<div class="cost"><div>Cost:</div><div class="number"></div></div>
-				<div class="sock-bonus"><div>Sock Bonus:</div><div class="number"></div></div>
-			</div>
-		</div>
-		<div class="spacer"></div>
-		<div class="craft-essence">
-			<div class="subheading">Craft Essence</div>
-			<div><select><option></option></select></div>
-			<div class="details">
-				<div class="cost"><div>Cost:</div><div class="number"></div></div>
-				<div class="box-chance"><div>Bonus Box:</div><div class="percentage"></div></div>
-			</div>
-		</div>
-	</div>
-	<div id="party-template" class="party">
-		<div class="commands"><span class="clone">clone</span><span class="delet-this">&#215;</span></div>
-		<div class="members flex-container"></div>
-		<div class="totals">
-			<div class="heading">Totals</div>
-			<div class="flex-container">
-				<div class="cost">Cost: <span class="number"></span></div>
-				<div class="sock-bonus">Sock Bonus: <span class="number"></span></div>
-				<div class="box-chance">Bonus Box Chance: <span class="percentage"></span></div>
-			</div>
-		</div>
-		<div class="yields">
-			<div class="heading">Average Yields</div>
-			<div class="flex-container">
-				<div class="quest-10">
-					<div class="subheading">10 AP</div>
-					<div class="details">
-						<div class="count"><div>Socks:</div><div class="number"></div></div>
-						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
-					</div>
-				</div>
-				<div class="quest-20">
-					<div class="subheading">20 AP</div>
-					<div class="details">
-						<div class="count"><div>Socks:</div><div class="number"></div></div>
-						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
-					</div>
-				</div>
-				<div class="quest-30">
-					<div class="subheading">30 AP</div>
-					<div class="details">
-						<div class="count"><div>Socks:</div><div class="number"></div></div>
-						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
-					</div>
-				</div>
-				<div class="quest-40">
-					<div class="subheading">40 AP</div>
-					<div class="details">
-						<div class="count"><div>Socks:</div><div class="number"></div></div>
-						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
-					</div>
-				</div>
-				<div class="quest-50">
-					<div class="subheading">50 AP</div>
-					<div class="details">
-						<div class="count"><div>Socks:</div><div class="number"></div></div>
-						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div id="description">See just how many socks you can expect to get with different party configurations in FateGO's Almost Weekly Santa Alter event</div>
 	<div id="parties"></div>
 	<div id="new-party"><input type="button" value="New Party"/></div>
+</div>
+<div id="page-footer">
+	<div class="credit">Fate/Grand Order &copy; TYPE-MOON / FGO PROJECT | Webpage &copy; batterymilk | All logos and trademarks are property of their respective owners.</div>
+	<div class="links">&hyphen; Feedback: <a href="http://www.reddit.com/r/grandorder/comments/7hefa6/christmas_sock_bonus_calculator/">/r/grandorder post</a> &hyphen; <a href=".">Index</a> &hyphen;</div>
 </div>
 </body>
 </html>
