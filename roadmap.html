@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>FateGO Event Road Map</title>
+<script type="text/javascript">
+	var EventsParser = {};
+	(function () {
+		var self = this;
+		
+		self.init = function ()
+		{
+			var eventsText = document.getElementById('events-text').textContent.split("\n");
+			var displayElem = document.getElementById('events');
+			
+			var eventsObject = parse_text(eventsText);
+			var eventsMarkup = generate_markup(eventsObject);
+			displayElem.innerHTML = eventsMarkup;
+		}
+		
+		var parse_text = function (eventsText)
+		{
+			/*
+			eventsText / #events-text
+				(event name)
+					?JP: (date/s)
+					?NA: (date/s)
+					Type: Event|Servant|Chapter
+					?URL: (url)
+					?Half AP: (area/type)
+					?Enhance Up[: (notes)]?
+					*(subbar info)
+					*(heading)
+						(table rows) - can be any of the following:
+							tab-separated values: each becomes own cell in new row
+								any value of the format (digit)* has asterisk stripped and is given class 'rarity'
+							line beginning with ---: becomes separator row
+								ignored if following header row
+							first line if begins with 2+ spaces: becomes header row
+								values must have at least 2 spaces between them
+					*Note: (footer notes)
+			Commented lines, such as this description, are ignored
+			*/
+
+			var eventsObject = {};
+			var lastDepth = 0;
+			var currentEvent = false;
+			var currentSubsection = false;
+			var currentTable = false;
+			var inComment = false;
+			for (var _i = 0, _len_i = eventsText.length; _i < _len_i; _i++)
+			{
+				var line = eventsText[_i];
+				if (line.match(/^\s*$/))
+					continue;
+				
+				if (line.match(/^\s*\/\*/))
+				{
+					inComment = true;
+				}
+				if (inComment)
+				{
+					if (line.match(/\*\/$/))
+						inComment = false;
+					continue;
+				}
+				
+				var tabDepth = line.match(/^\t*/)[0].length;
+				line = line.match(/^\t*(.+?)\s*$/)[1];
+				
+				if (tabDepth == 0)
+				{
+					var eventName = line.trim();
+					eventsObject[eventName] = { info : [], subsections : {}, notes : [] };
+					currentEvent = eventsObject[eventName];
+				}
+				else if (tabDepth == 1)
+				{
+					if (line.indexOf('JP: ') === 0)
+						currentEvent.jp = line.substr(4);
+					else if (line.indexOf('NA: ') === 0)
+						currentEvent.na = line.substr(4);
+					else if (line.indexOf('Type: ') === 0)
+						currentEvent.type = line.substr(6);
+					else if (line.indexOf('URL: ') === 0)
+						currentEvent.url = line.substr(5);
+					else if (line.indexOf('Half AP: ') === 0)
+						currentEvent.halfAP = line.substr(9);
+					else if (line.indexOf('Note: ') === 0)
+						currentEvent.notes.push(line.substr(6));
+					else if (line.indexOf('Enhance Up') === 0)
+					{
+						if (line.indexOf('Enhance Up: ') === 0)
+							currentEvent.enhanceUp = line.substr(12);
+						else
+							currentEvent.enhanceUp = true;
+					}
+					else
+					{
+						var nextLine = eventsText[_i + 1];
+						if (nextLine && nextLine.match(/^\t{2,}/))
+						{
+							var subsectionHeading = line.trim();
+							currentEvent.subsections[subsectionHeading] = { tables : [] };
+							currentSubsection = currentEvent.subsections[subsectionHeading];
+						}
+						else
+							currentEvent.info.push(line.trim());
+					}
+				}
+				else if (tabDepth >= 2)
+				{
+					if (lastDepth == 1)
+					{
+						currentSubsection.tables.push([]);
+						currentTable = currentSubsection.tables[currentSubsection.tables.length - 1];
+					}
+					
+					if (line.substr(0, 2) == ' '.repeat(2))
+					{
+						var values = line.trim().split(/\s{2,}/);
+						currentTable.push({ type : 'head', values : values });
+					}
+					else if (line.substr(0, 3) == '---')
+					{
+						var lastRow = currentTable[currentTable.length - 1];
+						if (!lastRow || lastRow.type != 'head')
+							currentTable.push({ type : 'separator' });
+					}
+					else
+					{
+						var values = line.split(/\t+/);
+						currentTable.push({ values : values });
+					}
+				}
+				lastDepth = tabDepth;
+			}
+			return eventsObject;
+		}
+		var generate_markup = function (eventsObject)
+		{
+			/*
+			eventsObject {
+				(event name) : {
+					?jp
+					?na
+					type
+					?url
+					?halfAP
+					?enhanceUp
+					info : [(str), ...]
+					subsections : {
+						(heading) : {
+							tables : [
+								[ //rows
+									{ ?type : head|separator, ?values : [(str), ...] },
+									...
+								],
+								...
+							]
+						}
+					},
+					notes : [(str), ...]
+				},
+				...
+			}
+			*/
+			
+			var markup = '';
+			for (var eventName in eventsObject)
+			{
+				if (!eventsObject.hasOwnProperty(eventName))
+					continue;
+				var event = eventsObject[eventName];
+				
+				markup += '<div class="' + event.type.toLowerCase() + '">';
+				
+				markup += '<div class="titlebar">';
+				markup += '<div class="title">' + (event.url ? '<a href="' + event.url + '" target="_blank">' + eventName + '</a>' : eventName) + '</div>';
+				if (event.jp || event.na)
+				{
+					markup += '<div class="separator' + (event.jp && event.na ? ' double' : '') + '"></div>';
+					markup += '<div class="date">' +
+						(event.na ? 'NA: ' + event.na : '') +
+						(event.na && event.jp ? '<br/>' : '') +
+						(event.jp ? 'JP: ' + event.jp : '') +
+					'</div>';
+				}
+				markup += '</div>';
+				
+				if (event.halfAP || event.enhanceUp || event.info.length > 0)
+				{
+					markup += '<div class="subbar">';
+					var children = [];
+					if (event.halfAP)
+						children.push('Half AP : ' + event.halfAP);
+					if (event.enhanceUp)
+						children.push('Super & Great Success Rates Up' + (typeof event.enhanceUp == 'string' ? ' : ' + event.enhanceUp : ''));
+					if (event.info.length > 0)
+						children.push(event.info.join('<br/>'));
+					markup += children.join('<div class="rule"></div>');
+					markup += '</div>';
+				}
+				
+				markup += '<div class="content">' +
+					'<div class="subsections">';
+				
+				for (var subsectionHeading in event.subsections)
+				{
+					if (!event.subsections.hasOwnProperty(subsectionHeading))
+						continue;
+					var subsection = event.subsections[subsectionHeading];
+					
+					markup += '<div class="subsection">' +
+						'<div class="head">' + subsectionHeading + '</div>';
+					
+					for (var _i = 0, _len_i = subsection.tables.length; _i < _len_i; _i++)
+					{
+						var table = subsection.tables[_i];
+						
+						markup += '<table>' +
+							'<thead>';
+						
+						var colCount = 0;
+						for (var _j = 0, _len_j = table.length; _j < _len_j; _j++)
+						{
+							var row = table[_j];
+							if (row.values && row.values.length > colCount)
+								colCount = row.values.length;
+						}
+						
+						var headClosed = false;
+						var stripeToggle = false;
+						for (var _j = 0, _len_j = table.length; _j < _len_j; _j++)
+						{
+							var row = table[_j];
+							if (row.type != 'head' && !headClosed)
+							{
+								markup += '</thead><tbody>';
+								headClosed = true;
+							}
+							
+							if (row.type == 'separator')
+								markup += '<tr class="separator"><td colspan="' + colCount + '"></td></tr>';
+							else if (row.type == 'head')
+								markup += '<tr><th>' + row.values.join('</th><th>') + '</th></tr>';
+							else
+							{
+								markup += '<tr class="' + (stripeToggle ? 'light-stripe' : 'dark-stripe' ) + '">';
+								for (var _k = 0, _len_k = row.values.length; _k < _len_k; _k++)
+								{
+									var value = row.values[_k];
+									if (value.match(/^\d\*$/))
+										markup += '<td class="rarity">' + value.substring(0, value.length - 1) + '</td>';
+									else
+										markup += '<td>' + value + '</td>';
+								}
+								markup += '</tr>';
+								stripeToggle = !stripeToggle;
+							}
+						}
+						markup += '</tbody>' +
+							'</table>';
+					}
+					markup += '</div>'; //subsection
+				}
+				markup += '</div>'; //subsections
+				
+				if (event.notes.length > 0)
+					markup += '<div class="note">' + event.notes.join('<br/>') + '</div>';
+				
+				markup += '</div>'; //content
+				markup += '</div>'; //event|servant|chapter
+			}
+			return markup;
+		}
+	}).call(EventsParser);
+	
+	document.addEventListener('DOMContentLoaded', function () {
+		EventsParser.init();
+	});
+</script>
+<style type="text/css">
+	:root {
+		--event-light: #E8F0FF;
+		--event-dark: #C8D0F0;
+		--servant-light: #FFFFE8;
+		--servant-dark: #E0E0C8;
+		--chapter-light: #FFE8E8;
+		--chapter-dark: #F0C8C8;
+	}
+	body {
+		background-color: white;
+		color: black;
+		text-align: center;
+		font-size: 12pt;
+		font-family: sans-serif;
+	}
+	#events-text {
+		display: none;
+		white-space: pre;
+		text-align: left;
+	}
+	#page-container {
+		display: inline-block;
+		text-align: left;
+	}
+	#events > div {
+		margin-bottom: 8px;
+		border-radius: 10px;
+		overflow: hidden;
+	}
+	#events .event {
+		background-color: var(--event-light);
+		border: 1px solid var(--event-dark);
+	}
+	#events .servant {
+		background-color: var(--servant-light);
+		border: 1px solid var(--servant-dark);
+	}
+	#events .chapter {
+		background-color: var(--chapter-light);
+		border: 1px solid var(--chapter-dark);
+	}
+	#events .event .titlebar {
+		background: var(--event-dark) linear-gradient(var(--event-light), var(--event-dark) 20%);
+	}
+	#events .servant .titlebar {
+		background: var(--servant-dark) linear-gradient(var(--servant-light), var(--servant-dark) 20%);
+	}
+	#events .chapter .titlebar {
+		background: var(--chapter-dark) linear-gradient(var(--chapter-light), var(--chapter-dark) 20%);
+	}
+	#events .titlebar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0 4px;
+	}
+	#events .titlebar .title {
+		flex-grow: 0;
+		font-size: 16pt;
+	}
+	#events .titlebar .title a {
+		color: black;
+		text-decoration: none;
+	}
+	#events .titlebar .separator {
+		flex-grow: 1;
+		height: 1em;
+		margin: 0 6px;
+		border-right: 2px groove black;
+	}
+	#events .titlebar .separator.double {
+		height: 1.6em;
+	}
+	#events .titlebar .date {
+		flex-grow: 0;
+	}
+	#events .subbar {
+		padding: 4px;
+		border-width: 1px;
+		border-style: solid;
+		border-radius: 0 0 10px 10px;
+	}
+	#events .subbar .rule {
+		height: 1px;
+		margin: 2px 0;
+		border-top-width: 1px;
+		border-top-style: solid;
+	}
+	#events .event .subbar,
+	#events .event .subbar .rule {
+		border-color: var(--event-dark);
+		background-color: var(--event-light);
+	}
+	#events .servant .subbar,
+	#events .servant .subbar .rule {
+		border-color: var(--servant-dark);
+		background-color: var(--servant-light);
+	}
+	#events .chapter .subbar,
+	#events .chapter .subbar .rule {
+		border-color: var(--chapter-dark);
+		background-color: var(--chapter-light);
+	}
+	#events .content {
+		padding: 4px;
+		text-align: center;
+	}
+	#events .head {
+		margin-bottom: 4px;
+		font-weight: bold;
+	}
+	#events .subsections {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-around;
+		margin-bottom: 4px;
+	}
+	#events .subsection {
+		margin: 0 2px;
+	}
+	#events .note {
+		margin-top: 8px;
+		font-style: italic;
+	}
+	#events .content table {
+		border-width: 1px;
+		border-style: solid;
+		border-color: gray;
+		border-collapse: collapse;
+		font-size: 10pt;
+		overflow: hidden;
+	}
+	#events .content table .separator {
+		border-width: 0 0 1px 0;
+		border-style: solid;
+		border-color: gray;
+	}
+	#events .content table .separator td {
+		padding: 0;
+	}
+	#events .content th {
+		text-align: center;
+		border-width: 0 0 1px 0;
+		border-style: solid;
+		border-color: gray;
+	}
+	#events .content td {
+		text-align: left;
+	}
+	#events .content td, #events th {
+		padding: 4px;
+	}
+	#events .content td.rarity:after {
+		content: '\2605'
+	}
+	#events .event .content tr.light-stripe {
+		background-color: var(--event-light);
+	}
+	#events .event .content tr.dark-stripe {
+		background-color: var(--event-dark);
+	}
+	#events .servant .content tr.light-stripe {
+		background-color: var(--servant-light);
+	}
+	#events .servant .content tr.dark-stripe {
+		background-color: var(--servant-dark);
+	}
+	#events .chapter .content tr.light-stripe {
+		background-color: var(--chapter-light);
+	}
+	#events .chapter .content tr.dark-stripe {
+		background-color: var(--chapter-dark);
+	}
+	#page-header {
+		margin-bottom: 16px;
+	}
+	#page-footer {
+		margin-top: 24px;
+		font-size: 10pt;
+	}
+	#page-footer > div {
+		margin-top: 4px;
+	}
+</style>
+</head>
+<body>
+<div id="events-text">
+/*
+Fate/GUDAGUDA Honnoji
+	Type: Event
+	JP: Nov. 25th ~ Dec. 11th, 2015
+	NA: Nov. 8th ~ 24th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20151125.php#nav
+	Event Servants
+		     Name        Reward Points
+		------------------------------
+		Okita Souji			+100%
+		---
+		Oda Nobunaga		 +60%
+		---
+		Emiya				 +40%
+		---
+		Cu Chulainn			 +20%
+		Medusa				 +20%
+		Mephistopheles 		 +20%
+		Ushiwakamaru		 +20%
+		Musashibou Benkei	 +20%
+	Rate Up
+		Okita Souji		Saber	5*
+		Emiya			Archer	4*
+		Cu Chulainn		Lancer	3*
+		Medusa			Rider	3*
+		Mephistopheles	Caster	3* 
+	Note: Oda Nobunaga &amp; ascension materials available in event shop
+
+The FGO Thanksgiving Special
+	Type: Event
+	JP: Dec. 9th ~	16th, 2015
+	NA: Nov. 22nd ~ Dec. 1st, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Thanksgiving_2017_Event_(US)
+	Half AP: All dailies
+	Rate Up
+		Scáthach			Lancer		5*
+		Gilgamesh			Archer		5*
+		Sakata Kintoki		Berserker	5*
+		Medea (Lily)		Caster		4*
+		Diarmuid Ua Duibhne	Lancer		3*
+		Fergus Mac Roich	Saber		3*
+	Paid Gatcha
+		Altria Pendragon			Saber		5*
+		Altera						Saber		5*
+		Okita Souji					Saber		5*
+		Orion						Archer		5*
+		Francis Drake				Rider		5*
+		Zhuge Lange (El-Melloi II)	Caster		5*
+		Tamamo-no-Mae				Caster		5*
+		Vlad III					Berserker	5*
+		Jeanne d'Arc				Ruler		5*
+	Da Vinci's Workshop
+		     Item               Expires
+		-----------------------------------
+		Mona Lisa CE (x5)	Feb. 22nd, 2018
+		Grab Bag			Dec. 19th, 2017
+		Material Grab Bag	Dec. 19th, 2017
+*/
+Almost Weekly Santa Alter
+	Type: Event
+	JP: Dec. 16th ~ 25th, 2015
+	NA: Dec. 1st ~ 11th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_us_20171201.php#nav
+	Altria Pendragon (Santa Alter) available in event shop
+	Event Servants
+			       Name                Class  Magic Stocking
+		----------------------------------------------------
+		Altria Pendragon (Santa Alter)	Rider		+4
+		---
+		Jack the Ripper					Assassin	+3
+		---
+		Marie Antoinette				Rider		+2
+		Martha							Rider		+2
+		Nursery Rhyme					Caster		+2
+		---
+		Gaius Julius Caesar				Saber		+1
+		Robin Hood						Archer		+1
+		Jing Ke							Assassin	+1
+		Darius III						Berserker	+1
+		David							Archer		+1
+		Phantom of the Opera			Assassin	+1
+	Rate Up
+		Jack the Ripper		Assassin	5*
+		Nursery Rhyme		Caster		4*
+		Marie Antoinette	Rider		4*
+		Robin Hood			Archer		3*
+		Jing Ke				Assassin	3*
+
+Saber Wars ~Lily's Cosmic Warrior Training~
+	Type: Event
+	JP: Jan. 20th ~ Feb. 3rd, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160120.php#nav
+	Event Servants
+		       Name               Damage  Reward Points
+		------------------------------------------------
+		Mysterious Heroine X		+100% 	+50%
+		Artoria Pendragon (Lily)	+100% 	+50%
+		Artoria Pendragon (Alter)	+100% 	+50%
+		------------------------------------------------
+		Nero Claudius				 +80% 	+30%
+		------------------------------------------------
+		Artoria Pendragon			 +60% 	+20%
+		Siegfried					 +60% 	+20%
+		Altera						 +60% 	+20%
+		Chevalier D'Eon				 +60% 	+20%
+		Okita Souji					 +60% 	+20%
+		Mordred						 +60% 	+20%
+		------------------------------------------------
+		Gaius Julius Caesar			 +40% 	+10%
+		Gilles de Rais				 +40% 	+10%
+		Fergus Mac Roich			 +40% 	+10%
+	Rate Up
+		Mysterious Heroine X		Assassin	5*
+		Nero Claudius				Saber		4*
+		Artoria Pendragon (Alter)	Saber		4*
+	Note: Probably will be bumped up to coincide with new Star Wars theatrical release
+
+London Chapter Release
+	Type: Chapter
+	JP: Dec. 28th, 2015 ~ Jan. 13th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/London_Campaign
+	Rate Up
+		Mordred					Saber		5*
+		Frankenstein			Berserker	4*
+		Henry Jekyll &amp; Hyde	Assassin	3*
+		Paracelsus				Caster		3*
+		Charles Babbage			Caster		3*
+
+Happy New Year 2018
+	Type: Event
+	JP: Jan. 1st ~ Jan. 13th, 2016
+	Banner
+		Karna			Lancer		5*
+		Arjuna			Archer		5*
+		Gilgamesh		Archer		5*
+		Sakata Kintoki	Berserker	5*
+		Scáthach		Lancer		5*
+	Note: Some elements of this event appear to have been folded into Thanksgiving
+
+London Campaign #2
+	Type: Servant
+	JP: Jan. 13th ~ Jan. 20th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/London_Campaign_2
+	Half AP: Ember Gathering
+	Rate Up
+		Nikola Tesla						Archer	5*
+		Artoria Pendragon (Alter Lancer)	Lancer	4*
+
+Uproar of the Chocolate Ladies ~Valentine 2016~
+	Type: Event
+	JP: Feb. 10th ~ Feb. 19th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160210.php#nav
+	Rate Up
+		Nero Claudius (Bride)	Saber		5*
+		Artoria Pendragon		Saber		5*
+		Altera					Saber		5*
+		Jeanne D'Arc			Ruler		5*
+		Orion					Archer		5*
+		Tamamo no Mae			Caster		5*
+		Francis Drake			Rider		5*
+		Jack the Ripper			Assassin	5*
+		Mordred					Saber		5*
+
+Kara no Kyoukai / The Garden of Order
+	Type: Event
+	JP: Feb. 25th ~ Mar. 9th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160225.php#nav
+	Ryougi Shiki (Assassin) &amp; ascension materials available from event rewards
+	Rate Up
+		Ryougi Shiki (Saber)	Saber	5*
+
+Chaldea Boys Collection
+	Type: Servant
+	JP: Mar. 9th ~ 16th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/Chaldea_Boys_Collection_2016_Event
+	Rate Up
+		Amakusa Shirou					Ruler		5*
+		Vlad III						Berserker	5*
+		Zhuge Liang (Lord El-Melloi II)	Caster		5*
+		Nikola Tesla					Archer		5*
+		Astolfo							Rider		4*
+		Young Gil						Archer		3*
+
+Prison Tower's Howling Demon of Vengeance
+	Type: Event
+	JP: Mar. 9th ~ 23rd, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160316.php#nav
+	Half AP: London
+	First Avenger class released
+	Banner
+		Edmond Dantes	Avenger	5*
+
+E Pluribus Unum Chapter Release
+	Type: Chapter
+	JP: Mar. 30th, 2016
+	Rate Up
+		Nightingale			Berserker	5*
+		Helena Blavatsky	Caster		4*
+		Rama				Saber		4*
+		Geronimo			Caster		3*
+		Billy the Kid		Archer		3* 
+
+Da Vinci and the Seven Fake Heroic Spirits
+	Type: Event
+	JP: Apr. 11th ~ 21st, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160411.php#nav
+	Event Servants
+		  Class        Manuscript Bonus
+		Shielder	+1 True &amp; +1 False
+		Ruler		+1 True &amp; +1 False
+		Avenger		+1 True &amp; +1 False
+		---
+		Saber		+1 True
+		Lancer		+1 True
+		Archer		+1 True
+		---
+		Rider		+1 False
+		Caster		+1 False
+		Assassin	+1 False
+		Berserker	+1 False
+	Banner
+		Jeanne d'Arc (Alter)	Avenger	5*
+
+Fate/Accel Zero Order Pre-Event Campaign
+	Type: Servant
+	JP: Apr. 21st ~ Apr. 27th, 2016
+	Rate Up
+		Artoria Pendragon		Saber		5*
+		Gilgamesh				Archer		5*
+		Lancelot				Berserker	4*
+		Diarmuid Ua Duibhne		Lancer		3*
+		Gilles de Rais (Caster)	Caster		3*
+	
+Fate/Accel Zero Order
+	Type: Event
+	JP: Apr. 27th ~ May 11th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160427.php#nav
+	Irisviel (Dress of Heaven) available from event rewards
+	Event Servants
+		      Name             Emblem Bonus
+		---------------------------------------
+		Artoria Pendragon			+3 Lancer
+		Gilles de Rais				+3 Lancer
+		---
+		Gilgamesh					+3 Saber
+		Child Gil					+3 Saber
+		---
+		Diarmuid Ua Duibhne			+3 Archer
+		---
+		Alexander					+3 Caster
+		Iskandar					+3 Caster
+		---
+		Zhuge Liang (El-Melloi II)	+3 Assassin
+		Gilles de Rais (Caster)		+3 Assassin
+		Irisviel (Dress of Heaven)	+3 Assassin
+		---
+		Hassan of the Cursed Arm	+3 Rider
+		Hassan of the Hundred Faces	+3 Rider
+		Emiya (Assassin)			+3 Rider
+		---
+		Lancelot					+3 Berserker
+		---
+		Angra Mainyu				+3 all
+	Rate Up
+		Iskander					Rider		5*
+		Zhuge Liang (El-Melloi II)	Caster		5*
+		Emiya (Assassin)			Assassin	4*
+		Hassan of the Hundred Faces	Assassin	3*
+	Note: Emiya (Assassin) and Hassan of the Hundred Faces become permanently available
+</div>
+<div id="page-header">
+	<div class="description">&#150; Overview of upcoming events with servant bonuses or releases &#150;</div>
+</div>
+<div id="page-container">
+	<div id="events"></div>
+</div>
+<div id="page-footer">
+	<div class="credit">Fate/Grand Order &copy; TYPE-MOON / FGO PROJECT | Webpage &copy; batterymilk | All logos and trademarks are property of their respective owners.</div>
+	<div class="links">&hyphen; <a href=".">Index</a> &hyphen;</div>
+</div>
+</body>
+</html>
