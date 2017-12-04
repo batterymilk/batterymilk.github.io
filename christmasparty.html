@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>FateGO Christmas Sock Bonus Calculator</title>
+<script type="text/javascript" src="../../_jslib/jquery-3.1.1.min.js"></script>
+<script type="text/javascript">
+	//yield formula: total regular socks + (sock bonus * box count) + [(bonus box socks + sock bonus) * box count * bonus box chance]
+	
+	var SockCalc = {};
+	(function () {
+		var self = this;
+		
+		var Party = (function () {
+			var Party = function (index, memberValues)
+			{
+				this.index = index;
+				this.members = [];
+				this.ownElems = {};
+				this.totals = {};
+				this.yields = { 10 : {}, 20 : {}, 30 : {}, 40 : {}, 50 : {} };
+				
+				this.render();
+				this.createMembers(memberValues);
+				this.updateTotals();
+				this.updateYields();
+			}
+			
+			Party.prototype = {
+				constructor : Party,
+				render : function ()
+				{
+					var ownElems = this.ownElems;
+					ownElems.container = pageElems.partyTemplate
+						.clone()
+						.removeAttr('id')
+						.appendTo(pageElems.parties)
+						.show();
+					ownElems.members = ownElems.container.find('.members');
+					
+					var totalsContainer = ownElems.container.find('.totals');
+					ownElems.totals = {
+						cost : totalsContainer.find('.cost .number'),
+						sockBonus : totalsContainer.find('.sock-bonus .number'),
+						boxChance : totalsContainer.find('.box-chance .percentage')
+					};
+					
+					var yieldsContainer = ownElems.container.find('.yields');
+					ownElems.yields = {};
+					for (var _i = 10; _i <= 50; _i += 10)
+					{
+						var questContainer = yieldsContainer.find('.quest-' + _i);
+						ownElems.yields[_i] = {
+							count : questContainer.find('.count .number'),
+							rate : questContainer.find('.rate .number')
+						};
+					}
+					
+					ownElems.container.find('.commands .delet-this').click(this.selfDestruct.bind(this));
+					ownElems.container.find('.commands .clone').click(this.clone.bind(this));
+				},
+				createMembers : function (memberValues)
+				{
+					for (var _i = 0; _i < 6; _i++)
+					{
+						if (memberValues)
+							this.members.push(new Member(this, _i == 0, memberValues[_i]));
+						else
+							this.members.push(new Member(this, _i == 0));
+					}
+				},
+				updateTotals : function ()
+				{
+					var totals = { cost : 0, sockBonus : 0, boxChance : 0 };
+					this.totals = totals;
+					$.each(this.members, function (index, member) {
+						totals.cost += member.servant.cost + member.craftEssence.cost;
+						totals.sockBonus += member.servant.sockBonus;
+						totals.boxChance += member.craftEssence.boxChance;
+					});
+					if (totals.boxChance > 1)
+						totals.boxChance = 1; //clamped to 100%
+					
+					this.ownElems.totals.cost.text(format_display_number(this.totals.cost));
+					this.ownElems.totals.sockBonus.text(format_display_number(this.totals.sockBonus, 'sign'));
+					this.ownElems.totals.boxChance.text(format_display_number(this.totals.boxChance, 'percent'));
+				},
+				updateYields : function ()
+				{
+					for (var _i = 10; _i <= 50; _i += 10)
+					{
+						var yields = {};
+						this.yields[_i] = yields;
+						yields.count = freeQuests[_i].socks;
+						yields.count += this.totals.sockBonus * freeQuests[_i].boxes;
+						yields.count += Math.round(this.totals.boxChance * (this.totals.sockBonus + freeQuests[_i].bonusBox) * freeQuests[_i].boxes * 100) / 100;
+						yields.rate = Math.round(yields.count / _i * 100) / 100;
+						
+						this.ownElems.yields[_i].count.text(format_display_number(yields.count));
+						this.ownElems.yields[_i].rate.text(format_display_number(yields.rate));
+					}
+				},
+				selfDestruct : function ()
+				{
+					parties.splice(this.index, 1);
+					this.ownElems.container.remove();
+				},
+				clone : function ()
+				{
+					var memberValues = {};
+					for (var _i = 0; _i < 6; _i++)
+						memberValues[_i] = { servant : this.members[_i].servant.name, craftEssence : this.members[_i].craftEssence.name };
+					self.getThisPartyStarted(memberValues);
+				}
+			};
+			
+			return Party;
+		})();
+
+		var Member = (function () {
+			var Member = function (parent, isSupport, memberValues)
+			{
+				this.parent = parent;
+				this.isSupport = isSupport;
+				this.ownElems = {};
+				this.servant = { name : '', cost : 0, sockBonus : 0 };
+				this.craftEssence = { name : '', cost : 0, boxChance : 0 };
+				
+				this.render();
+				this.propagateValuesToSelects(memberValues);
+				this.updateServant();
+				this.updateCraftEssence();
+			}
+			
+			Member.prototype = {
+				constructor : Member,
+				render : function ()
+				{
+					var self = this;
+					var ownElems = this.ownElems;
+					ownElems.container = pageElems.memberTemplate
+						.clone()
+						.removeAttr('id')
+						.appendTo(this.parent.ownElems.members)
+						.show();
+					
+					var memberHeading = ownElems.container.find('.support');
+					if (this.isSupport)
+						memberHeading.text('Support');
+					
+					var servantContainer = ownElems.container.find('.servant');
+					ownElems.servant = {
+						select : servantContainer.find('select'),
+						cost : servantContainer.find('.cost .number'),
+						sockBonus : servantContainer.find('.sock-bonus .number')
+					};
+					ownElems.servant.select.change(self.updateServant.bind(this));
+
+					var craftEssenceContainer = ownElems.container.find('.craft-essence');
+					ownElems.craftEssence = {
+						select : craftEssenceContainer.find('select'),
+						cost : craftEssenceContainer.find('.cost .number'),
+						boxChance : craftEssenceContainer.find('.box-chance .percentage')
+					};
+					ownElems.craftEssence.select.change(self.updateCraftEssence.bind(this));
+					
+					this.populateSelect('servant');
+					this.populateSelect('craftEssence');
+				},
+				populateSelect : function (selectID)
+				{
+					if (selectID == 'servant')
+					{
+						var selectElem = this.ownElems.servant.select;
+						var content = servantCosts;
+					}
+					else if (selectID == 'craftEssence')
+					{
+						var selectElem = this.ownElems.craftEssence.select;
+						var content = ceCosts;
+					}
+					else
+						return;
+					
+					$.each(content, function (name, value) {
+						selectElem.append('<option>' + name + '</option>');
+					});
+				},
+				updateServant : function (event)
+				{
+					var name = this.ownElems.servant.select.val();
+					this.servant.name = name;
+					this.servant.cost = !this.isSupport && servantCosts.hasOwnProperty(name) ? servantCosts[name] : 0;
+					this.servant.sockBonus = servantSockBonuses.hasOwnProperty(name) ? servantSockBonuses[name] : 0;
+					
+					this.ownElems.servant.cost.text(format_display_number(this.servant.cost));
+					this.ownElems.servant.sockBonus.text(format_display_number(this.servant.sockBonus, 'sign'));
+					
+					this.parent.updateTotals();
+					this.parent.updateYields();
+				},
+				updateCraftEssence : function (event)
+				{
+					var name = this.ownElems.craftEssence.select.val();
+					this.craftEssence.name = name;
+					this.craftEssence.cost = !this.isSupport && ceCosts.hasOwnProperty(name) ? ceCosts[name] : 0;
+					this.craftEssence.boxChance = ceBonusBoxChances.hasOwnProperty(name) ? ceBonusBoxChances[name] : 0;
+
+					this.ownElems.craftEssence.cost.text(format_display_number(this.craftEssence.cost));
+					this.ownElems.craftEssence.boxChance.text(format_display_number(this.craftEssence.boxChance, 'percent'));
+					
+					this.parent.updateTotals();
+					this.parent.updateYields();
+				},
+				propagateValuesToSelects : function (memberValues)
+				{
+					if (!memberValues)
+						return;
+					
+					this.ownElems.servant.select.val(memberValues.servant);
+					this.ownElems.craftEssence.select.val(memberValues.craftEssence);
+				}
+			};
+			
+			return Member;
+		})();
+
+		self.init = function ()
+		{
+			pageElems.parties = $('#parties');
+			pageElems.partyTemplate = $('#party-template');
+			pageElems.memberTemplate = $('#member-template');
+			
+			$('#new-party input').click(self.getThisPartyStarted);
+			self.getThisPartyStarted();
+		}
+		self.getThisPartyStarted = function (memberValues)
+		{
+			parties.push(new Party(parties.length, memberValues));
+		}
+		
+		var format_display_number = function (num, type)
+		{
+			if (type == 'sign')
+				return '+' + num;
+			if (type == 'percent')
+				return Math.round(num * 100) + '%';
+			return num;
+		}
+		
+		var servantSockBonuses = {
+			'Santa Alter' : 4,
+			Jack : 3,
+			Marie : 2,
+			Martha : 2,
+			'Nursery Rhyme' : 2,
+			Caesar : 1,
+			'Robin Hood' : 1,
+			'Jing Ke' : 1,
+			Darius : 1,
+			David : 1,
+			Phantom : 1
+		};
+		var servantCosts = { 
+			'Santa Alter' : 12,
+			Jack : 16,
+			Marie : 12,
+			Martha : 12,
+			'Nursery Rhyme' : 12,
+			Caesar : 7,
+			'Robin Hood' : 7,
+			'Jing Ke' : 7,
+			Darius : 7,
+			David : 7,
+			Phantom : 4,
+			'Other 5*' : 16,
+			'Other 4*' : 12,
+			'Other 3*' : 7,
+			'Other 2*' : 4,
+			'Other 1*' : 3,
+			Mash : 0
+		};
+		var ceBonusBoxChances = { 'Holy Night Sign' : 0.2 };
+		var ceCosts = {
+			'Holy Night Sign' : 12,
+			'Other 5*' : 12,
+			'Other 4*' : 9,
+			'Other 3*' : 5,
+			'Other 2*' : 3,
+			'Other 1*' : 1
+		};
+		var freeQuests = {
+			10 : { socks : 2, boxes : 1, bonusBox : 1 },
+			20 : { socks : 6, boxes : 2, bonusBox : 2 },
+			30 : { socks : 13, boxes : 3, bonusBox : 3 },
+			40 : { socks : 25, boxes : 4, bonusBox : 4 },
+			50 : { socks : 41, boxes : 5, bonusBox : 5 }
+		};
+		
+		var pageElems = {};
+		var parties = [];
+	}).call(SockCalc);
+	
+	$(document).ready(function () {
+		SockCalc.init();
+	});
+</script>
+<style type="text/css">
+	body {
+		margin: 8px;
+		background-color: white;
+		color: black;
+		text-align: center;
+		font-size: 12pt;
+		font-family: sans-serif;
+	}
+	#page-content {
+		display: inline-block;
+		text-align: left;
+	}
+	#party-template,
+	#member-template {
+		display: none;
+	}
+	.party {
+		border: 3px double silver;
+		padding: 2px;
+		margin-bottom: 16px;
+	}
+	.party .commands {
+		text-align: right;
+		font-size: 10pt;
+		line-height: 100%;
+	}
+	.party .commands .clone {
+		margin-right: 12px;
+		cursor: pointer;
+		font-style: italic;
+	}
+	.party .commands .delet-this {
+		color: maroon;
+		cursor: pointer;
+	}
+	.party .totals,
+	.party .yields {
+		border: 1px solid silver;
+		padding: 2px;
+		margin: 4px;
+	}
+	.party .totals .flex-container > * {
+		width: 33%;
+		text-align: center;
+	}
+	.party .yields .flex-container > * {
+		width: 7em;
+	}
+	.party .members {
+		margin: 2px;
+	}
+	.member {
+		border: 1px solid silver;
+		padding: 4px;
+		margin: 2px;
+	}
+	.member .support {
+		height: 1.2em;
+		font-style: italic;
+	}
+	.member .spacer {
+		height: 10px;
+	}
+	.party .details > div,
+	.member .details > div {
+		display: flex;
+		justify-content: space-between;
+		font-size: 10pt;
+	}
+	.heading {
+		border-style: solid;
+		border-color: silver;
+		border-width: 0 0 1px 0;
+		background-color: #E0E0E0;
+		text-align: center;
+	}
+	.party .heading {
+		margin: -2px -2px 2px -2px;
+	}
+	.member .heading {
+		margin: -4px -4px 2px -4px;
+	}
+	.subheading {
+		border-style: solid;
+		border-color: silver;
+		border-width: 1px 0 1px 0;
+		margin: 2px 0;
+		background-color: #F0F0F0;
+		text-align: center;
+	}
+	#new-party {
+		margin-top: 32px;
+	}
+	#credit {
+		margin-top: 32px;
+		font-size: 10pt;
+	}
+	.flex-container {
+		display: flex;
+		justify-content: space-around;
+	}
+</style>
+</head>
+<body>
+<div id="page-content">
+	<div id="member-template" class="member">
+		<div class="support heading"></div>
+		<div class="servant">
+			<div class="subheading">Servant</div>
+			<div><select><option></option></select></div>
+			<div class="details">
+				<div class="cost"><div>Cost:</div><div class="number"></div></div>
+				<div class="sock-bonus"><div>Sock Bonus:</div><div class="number"></div></div>
+			</div>
+		</div>
+		<div class="spacer"></div>
+		<div class="craft-essence">
+			<div class="subheading">Craft Essence</div>
+			<div><select><option></option></select></div>
+			<div class="details">
+				<div class="cost"><div>Cost:</div><div class="number"></div></div>
+				<div class="box-chance"><div>Bonus Box:</div><div class="percentage"></div></div>
+			</div>
+		</div>
+	</div>
+	<div id="party-template" class="party">
+		<div class="commands"><span class="clone">clone</span><span class="delet-this">&#215;</span></div>
+		<div class="members flex-container"></div>
+		<div class="totals">
+			<div class="heading">Totals</div>
+			<div class="flex-container">
+				<div class="cost">Cost: <span class="number"></span></div>
+				<div class="sock-bonus">Sock Bonus: <span class="number"></span></div>
+				<div class="box-chance">Bonus Box Chance: <span class="percentage"></span></div>
+			</div>
+		</div>
+		<div class="yields">
+			<div class="heading">Average Yields</div>
+			<div class="flex-container">
+				<div class="quest-10">
+					<div class="subheading">10 AP</div>
+					<div class="details">
+						<div class="count"><div>Socks:</div><div class="number"></div></div>
+						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+					</div>
+				</div>
+				<div class="quest-20">
+					<div class="subheading">20 AP</div>
+					<div class="details">
+						<div class="count"><div>Socks:</div><div class="number"></div></div>
+						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+					</div>
+				</div>
+				<div class="quest-30">
+					<div class="subheading">30 AP</div>
+					<div class="details">
+						<div class="count"><div>Socks:</div><div class="number"></div></div>
+						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+					</div>
+				</div>
+				<div class="quest-40">
+					<div class="subheading">40 AP</div>
+					<div class="details">
+						<div class="count"><div>Socks:</div><div class="number"></div></div>
+						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+					</div>
+				</div>
+				<div class="quest-50">
+					<div class="subheading">50 AP</div>
+					<div class="details">
+						<div class="count"><div>Socks:</div><div class="number"></div></div>
+						<div class="rate"><div>Socks/AP:</div><div class="number"></div></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="parties"></div>
+	<div id="new-party"><input type="button" value="New Party"/></div>
+</div>
+</body>
+</html>
