@@ -4,6 +4,8 @@
 <meta charset="UTF-8"/>
 <title>FateGO Event Road Map</title>
 <script type="text/javascript">
+	//Add mystic code releases, note limited servants, summarize rare ascenion mat availability, add 5mil download event
+	
 	var EventsParser = {};
 	(function () {
 		var self = this;
@@ -27,9 +29,10 @@
 					?JP: (date/s)
 					?NA: (date/s)
 					?URL: (url)
+					?Mystic Code: (name)
 					?Half AP: (area/type)
 					?Enhance Up[: (notes)]?
-					*(subbar info)
+					*(other subbar info)
 					*(heading)
 						(table rows) - can be any of the following:
 							tab-separated values: each becomes own cell in new row
@@ -85,6 +88,8 @@
 						currentEvent.type = line.substr(6);
 					else if (line.indexOf('URL: ') === 0)
 						currentEvent.url = line.substr(5);
+					else if (line.indexOf('Mystic Code: ') == 0)
+						currentEvent.mysticCode = line.substr(13);
 					else if (line.indexOf('Half AP: ') === 0)
 						currentEvent.halfAP = line.substr(9);
 					else if (line.indexOf('Note: ') === 0)
@@ -130,11 +135,8 @@
 					}
 					else if (tabDepth == 3)
 					{
-						if (currentSubsection && currentTable)
-						{
-							var lastRow = currentTable[currentTable.length - 1];
-							lastRow.title = line.trim().replace(/\\n/g, "\n");
-						}
+						var lastRow = currentTable[currentTable.length - 1];
+						lastRow.title = line.trim().replace(/\\n/g, "\n");
 					}
 					else
 					{
@@ -155,6 +157,7 @@
 					?jp
 					?na
 					?url
+					?mysticCode
 					?halfAP
 					?enhanceUp
 					info : [(str), ...]
@@ -197,10 +200,12 @@
 				}
 				markup += '</div>';
 				
-				if (event.halfAP || event.enhanceUp || event.info.length > 0)
+				if (event.mysticCode || event.halfAP || event.enhanceUp || event.info.length > 0)
 				{
 					markup += '<div class="subbar">';
 					var children = [];
+					if (event.mysticCode)
+						children.push('Mystic Code Release : ' + event.mysticCode);
 					if (event.halfAP)
 						children.push('Half AP : ' + event.halfAP);
 					if (event.enhanceUp)
@@ -632,6 +637,7 @@ London Chapter Release
 			60% chance to increase NP Gauge by 12% per turn\nTake 500 damage per turn [Demerit]
 		Clock Tower				CE			3*
 			Increase NP Gauge by 2% per turn
+	Note: All servants and craft essences permanently added to story gacha
 
 Happy New Year 2016
 	Type: Event
@@ -652,7 +658,7 @@ Happy New Year 2016
 			Restore 200 HP per turn\nDecrease ATK by 10% [Demerit]
 		Law of the Jungle	CE			3*
 			Increase QP from clearing quests by 2,015
-			
+	Note: See details for rate up schedule
 	Note: Unclear if draw rates are actually increased
 	Note: Some elements of this event have been folded into Thanksgiving
 
@@ -707,6 +713,22 @@ Saber Wars ~Lily's Cosmic Warrior Training~
 			65% chance to restore 750 HP per turn
 		A True Shot Will Never Miss		CE			3*
 			Apply Sure Hit\nIncrease Critical Strength by 3%
+
+5M Downloads Campaign
+	Type: Event
+	JP: Feb. 3rd ~ 10th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/5M_Downloads_Campaign
+	Mystic Code: Anniversary Blonde
+	Batch of 10 different Heroic Spirit Portraits is available (can only choose 1)
+	Rate Up
+		Brynhildr				Lancer		5*
+		Beowulf					Berserker	4*
+		Fionn mac Cumhail		Lancer		4*
+		---
+		Vessel of the Saint		CE			5*
+			Apply Debuff Immunity (3 times)\nIncrease NP Gain by 15%
+		Millennium Golden Tree	CE			4*
+			Increase max HP by 200 per turn (Max: 3,000)
 
 Uproar of the Chocolate Ladies ~Valentine 2016~
 	Type: Event
@@ -817,7 +839,7 @@ Prison Tower's Howling Demon of Vengeance
 	Half AP: London
 	First Avenger class released
 	Rate Up
-		Edmond Dantes	Avenger	5*
+		Edmond Dantes / Count of Monte Cristo	Avenger	5*
 
 E Pluribus Unum Chapter Release
 	Type: Chapter
@@ -891,6 +913,7 @@ Fate/Accel Zero Order
 	Type: Event
 	JP: Apr. 27th ~ May 11th, 2016
 	URL: http://fate-go.cirnopedia.org/quest_event_20160427.php#nav
+	Angra Mainyu added to FP summon pool
 	Irisviel (Dress of Heaven) available from event rewards
 	Event Servants
 		      Name             Emblem Bonus
