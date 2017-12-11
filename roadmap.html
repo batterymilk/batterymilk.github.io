@@ -38,6 +38,7 @@
 								ignored if following header row
 							first line if begins with 2+ spaces: becomes header row
 								values must have at least 2 spaces between them
+							extra indent followed by any text: becomes row title text
 					*Note: (footer notes)
 			Commented lines, such as this description, are ignored
 			*/
@@ -124,12 +125,20 @@
 					else if (line.substr(0, 3) == '---')
 					{
 						var lastRow = currentTable[currentTable.length - 1];
-						if (!lastRow || lastRow.type != 'head')
+						if (lastRow && lastRow.type != 'head')
 							currentTable.push({ type : 'separator' });
+					}
+					else if (tabDepth == 3)
+					{
+						if (currentSubsection && currentTable)
+						{
+							var lastRow = currentTable[currentTable.length - 1];
+							lastRow.title = line.trim().replace(/\\n/g, "\n");
+						}
 					}
 					else
 					{
-						var values = line.split(/\t+/);
+						var values = line.replace(/\\n/g, '<br/>').split(/\t+/);
 						currentTable.push({ values : values });
 					}
 				}
@@ -153,7 +162,7 @@
 						(heading) : {
 							tables : [
 								[ //rows
-									{ ?type : head|separator, ?values : [(str), ...] },
+									{ ?type : head|separator, ?values : [(str), ...], ?title },
 									...
 								],
 								...
@@ -246,7 +255,7 @@
 								markup += '<tr><th>' + row.values.join('</th><th>') + '</th></tr>';
 							else
 							{
-								markup += '<tr class="' + (stripeToggle ? 'light-stripe' : 'dark-stripe' ) + '">';
+								markup += '<tr class="' + (stripeToggle ? 'light-stripe' : 'dark-stripe' ) + (row.title ? ' tooltipped' : '') + '"' + (row.title ? ' title="' + row.title + '"' : '') + '>';
 								for (var _k = 0, _len_k = row.values.length; _k < _len_k; _k++)
 								{
 									var value = row.values[_k];
@@ -400,7 +409,7 @@
 		margin-bottom: 4px;
 	}
 	#events .subsection {
-		margin: 0 2px;
+		margin: 0 4px;
 	}
 	#events .note {
 		margin-top: 8px;
@@ -421,6 +430,9 @@
 	}
 	#events .content table .separator td {
 		padding: 0;
+	}
+	#events .content table .tooltipped {
+		cursor: help;
 	}
 	#events .content th {
 		text-align: center;
@@ -598,7 +610,7 @@ Singularity Pickup Summon
 		Euryale						Archer	3*
 		David						Archer	3*
 		Hektor 						Lancer	3*
-	Note: See details for schedule
+	Note: See details for rate up schedule
 
 London Chapter Release
 	Type: Chapter
@@ -611,17 +623,36 @@ London Chapter Release
 		Henry Jekyll &amp; Hyde	Assassin	3*
 		Paracelsus				Caster		3*
 		Charles Babbage			Caster		3*
+		---
+		500 Years of Obsession	CE			5*
+			Effect activates when defeated by an enemy\nDisable enemy NP (2 turns)\nInflict 1,000 damage curse (10 turns)
+		Necromancy				CE			4*
+			50% chance to apply Guts with 500 HP when HP reaches 0
+		Awakened Determination	CE			4*
+			60% chance to increase NP Gauge by 12% per turn\nTake 500 damage per turn [Demerit]
+		Clock Tower				CE			3*
+			Increase NP Gauge by 2% per turn
 
 Happy New Year 2016
 	Type: Event
 	JP: Jan. 1st ~ Jan. 13th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/Happy_New_Year_2016
 	Banner
-		Karna			Lancer		5*
-		Arjuna			Archer		5*
-		Gilgamesh		Archer		5*
-		Sakata Kintoki	Berserker	5*
-		Scáthach		Lancer		5*
+		Karna				Lancer		5*
+		Arjuna				Archer		5*
+		Gilgamesh			Archer		5*
+		Sakata Kintoki		Berserker	5*
+		Scáthach			Lancer		5*
+		---
+		Grand New Year		CE			5*
+			Apply Target Focus (1 turn)\nApply Invincible (1 turn)\nIncrease Debuff Resist by 10%
+		Heroic New Year		CE			4*
+			Apply Debuff Immunity (1 time)\nIncrease DEF by 8%
+		Peace of Year 2016	CE			3*
+			Restore 200 HP per turn\nDecrease ATK by 10% [Demerit]
+		Law of the Jungle	CE			3*
+			Increase QP from clearing quests by 2,015
+			
 	Note: Unclear if draw rates are actually increased
 	Note: Some elements of this event have been folded into Thanksgiving
 
@@ -657,15 +688,38 @@ Saber Wars ~Lily's Cosmic Warrior Training~
 		Gaius Julius Caesar			 +40% 	+10%
 		Gilles de Rais				 +40% 	+10%
 		Fergus Mac Roich			 +40% 	+10%
+	Event CEs
+		           Name                 Acquired                            Bonus
+		Land of Shadow's Crimson Lotus	Gacha							Vacuum Tube +1
+		Mikotto! Bridal Training		Gacha							All-Purpose Lens +1
+		A True Shot Will Never Miss		Gacha							Transistor G +1
+		Star of Altria					Point Reward (x6)\nDrop			Party Attack +50%
+		Purely Bloom					Point Reward\nShop (x4)\nDrop	Own Attack +100%
 	Rate Up
-		Mysterious Heroine X		Assassin	5*
-		Nero Claudius				Saber		4*
-		Altria Pendragon (Alter)	Saber		4*
+		Mysterious Heroine X			Assassin	5*
+		Nero Claudius					Saber		4*
+		Altria Pendragon (Alter)		Saber		4*
+		---
+		Land of Shadow's Crimson Lotus	CE			5*
+			Apply Damage Plus 100 per turn (1,000 max)
+		Mikotto! Bridal Training		CE			4*
+			65% chance to restore 750 HP per turn
+		A True Shot Will Never Miss		CE			3*
+			Apply Sure Hit\nIncrease Critical Strength by 3%
 
 Uproar of the Chocolate Ladies ~Valentine 2016~
 	Type: Event
 	JP: Feb. 10th ~ Feb. 19th, 2016
 	URL: http://fate-go.cirnopedia.org/quest_event_20160210.php#nav
+	Event CEs
+		       Name             Acquired               Coin Bonus
+		Street Choco Maid		Gacha				Equipped Class +5
+		Kitchen☆Patissiere		Gacha				Equipped Class +3
+		Valentine Dojo of Tears	Quest Reward\nGacha	Equipped Class +1
+		Melty Sweetheart		Shop (x4)\nDrop		All Classes +2
+		Chaldea Standard		Quest Reward		All Classes +2
+		(Servant CEs)			Shop 				Servant Class +2
+		
 	Rate Up
 		Nero Claudius (Bride)	Saber		5*
 		Altria Pendragon		Saber		5*
@@ -676,14 +730,52 @@ Uproar of the Chocolate Ladies ~Valentine 2016~
 		Francis Drake			Rider		5*
 		Jack the Ripper			Assassin	5*
 		Mordred					Saber		5*
+		---
+		Street Choco Maid		CE			5*
+			Increase Arts Card effectiveness by 10%\nIncrease Quick Card effectiveness by 10%\nIncrease HP Recovery Amount by 20%
+		Kitchen ☆ Patissiere	CE			4*
+			Increase Critical Star Drop Rate by 15%\nIncrease NP Gain by 15%
+		Valentine Dojo of Tears	CE			3*
+			Apply Sure Hit\nIncrease NP Gauge by 3% per turn\nDecrease Charm Resist by 10% [Demerit]
+	Note: See details for rate up schedule
 
 Kara no Kyoukai / The Garden of Order
 	Type: Event
 	JP: Feb. 25th ~ Mar. 9th, 2016
 	URL: http://fate-go.cirnopedia.org/quest_event_20160225.php#nav
 	Ryougi Shiki (Assassin) &amp; ascension materials available from event rewards
+	Event CEs
+		    Name                    Acquired      Item Bonus
+		Grand Puppet Master			Gacha	Black Cat Figurine +1
+		Mature Gentleman			Gacha	Black Cat Figurine +1
+		---
+		Brilliant War Dancer		Gacha	Strawberry Ice Cream +1
+		Mystic Eyes of Distortion	Gacha	Strawberry Ice Cream +1
+		---
+		Repeat Magic				Gacha	Mineral Water +1
+		Sprinter					Gacha	Mineral Water +1
+		---
+		   Name                     Acquired                      Spawn Bonus
+		Beheading Bunny 2016		Shop (x5)\nDrop					Septet Assistant Lady +25%
+		Triple Bounded Field		Shop (x5)\nDrop					Primal Doll +25%
+		Summer Precognition			Quest Reward\nShop (x4)\nDrop	Corpse +25%
+		Refrain						Shop (x5)\nDrop					Mansion Ghost +25%\nSkeleton +25%
+		
 	Rate Up
-		Ryougi Shiki (Saber)	Saber	5*
+		Ryougi Shiki (Saber)		Saber	5*
+		---
+		Grand Puppet Master			CE		5*
+			Increase NP Gauge by 50% at the start of battle\nIncrease Arts Card effectiveness by 15% (3 turns)
+		Mature Gentleman			CE		5*
+			Increase Death Resist by 60%
+		Brilliant War Dancer		CE		4*
+			Apply Damage Plus 800
+		Mystic Eyes of Distortion	CE		4*
+			Increase Buster Card effectiveness by 20%\nDecrease own DEF by 15% [Demerit]
+		Repeat Magic				CE		3*
+			Increase NP Gauge by 20% at the start of battle\nIncrease NP Gain by 10%
+		Sprinter					CE		3*
+			Increase Quick Card effectiveness by 5%\nIncrease Debuff Resist by 10%
 
 Chaldea Boys Collection
 	Type: Servant
@@ -696,6 +788,25 @@ Chaldea Boys Collection
 		Nikola Tesla					Archer		5*
 		Astolfo							Rider		4*
 		Young Gil						Archer		3*
+		---
+		Kiss Your Hand					CE			5*
+			Increase Arts Card effectiveness by 10%\nIncrease Buster Card effectiveness by 10%\nIncrease Quick Card effectiveness by 10%
+		Professor and Me				CE			5*
+			Increase NP Gauge by 50% at the start of battle\nIncrease Critical Star Gather Rate by 300%
+		Versus							CE			5*
+			Increase damage to [Divine] by 80% (3 turns)\nDecrease damage from [Divine] by 40% (3 turns)
+		Moonlit Four					CE			4*
+			Increase NP Gain by 12%\nIncrease Critical Star Drop Rate by 12%\nRestore 200 HP per turn
+		Glassful Sweet Time				CE			4*
+			Apply Sure Hit\nApply Damage Plus 400\nDecrease incoming damaged by 200
+		Noisy Obsession					CE			4*
+			Increase Critical Strength by 15%\nIncrease NP Strength by 15%\nIncrease Charm Rate by 12%
+		Salon de Marie					CE			3*
+			Apply Evade (1 time)\nIncrease HP Recovery Amount by 5%\nIncrease Debuff Success Rate by 3%
+		Prince of Slayers				CE			3*
+			Gain 1 Critical Stars per turn\nIncrease damage against [Dragon] by 8%
+		
+	Note: See details for rate up schedule
 
 Prison Tower's Howling Demon of Vengeance
 	Type: Event
@@ -711,11 +822,18 @@ E Pluribus Unum Chapter Release
 	JP: Mar. 30th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/E_Pluribus_Unum_Chapter_Release
 	Rate Up
-		Nightingale			Berserker	5*
-		Helena Blavatsky	Caster		4*
-		Rama				Saber		4*
-		Geronimo			Caster		3*
-		Billy the Kid		Archer		3* 
+		Nightingale					Berserker	5*
+		Helena Blavatsky			Caster		4*
+		Rama						Saber		4*
+		Geronimo					Caster		3*
+		Billy the Kid				Archer		3*
+		---
+		Ideal Holy King				CE			5*
+			Increase the max HP of all allies (including Sub Members) by 1,000
+		Record Holder				CE			4*
+			Increase Debuff Success Rate by 15%
+		Beast of the Surging Sea	CE			3*
+			Increase NP Strength by 15% when equipped to a [Lancer] class
 
 Da Vinci and the Seven Fake Heroic Spirits
 	Type: Event
@@ -723,20 +841,37 @@ Da Vinci and the Seven Fake Heroic Spirits
 	URL: http://fate-go.cirnopedia.org/quest_event_20160411.php#nav
 	Event Servants
 		  Class        Manuscript Bonus
-		Shielder	+1 True &amp; +1 False
-		Ruler		+1 True &amp; +1 False
-		Avenger		+1 True &amp; +1 False
+		Shielder	True +1 &amp; False +1
+		Ruler		True +1 &amp; False +1
+		Avenger		True +1 &amp; False +1
 		---
-		Saber		+1 True
-		Lancer		+1 True
-		Archer		+1 True
+		Saber		True +1
+		Lancer		True +1
+		Archer		True +1
 		---
-		Rider		+1 False
-		Caster		+1 False
-		Assassin	+1 False
-		Berserker	+1 False
+		Rider		False +1
+		Caster		False +1
+		Assassin	False +1
+		Berserker	False +1
+	Event CEs
+		       Name             Acquired        Bonus
+		Venomous Snake Art		Gacha				Self Portrait (False) +1
+		Art of Death			Gacha				Human Anatomy (False) +1
+		Gentle Affection		Gacha				Mona Lisa (False) +1
+		---
+		Empieta					Lottery\nDrop		True enemy spawn +100%
+		Maiden Leading Chaldea	Lottery\nDrop		False enemy spawn +100%
+		---
+		School of Chaldea		Shop (x4)\nDrop		Manuscript (True) +2\nManuscript (False) +2
 	Rate Up
 		Jeanne d'Arc (Alter)	Avenger	5*
+		---
+		Venomous Snake Art		CE		5*
+			Increase Arts Card effectiveness by 30% (3 turns)
+		Art of Death			CE		4*
+			Increase damage against [Humanoid] by 25%
+		Gentle Affection		CE		3*
+			Increase HP Recovery Amount by 15%
 
 Fate/Accel Zero Order Pre-Event Campaign
 	Type: Servant
@@ -779,12 +914,30 @@ Fate/Accel Zero Order
 		Lancelot					+3 Berserker
 		---
 		Angra Mainyu				+3 all
+	Event CEs
+		       Name         Acquired                      Emblem Bonus
+		Pre-Awakening		Gacha						Equipped Class +3
+		Volumen Hydrargyrum	Gacha						Equipped Class +3
+		Miss Loveless		Gacha						Equipped Class +2
+		Self Geass Scroll	Quest Reward\nGacha			Equipped Class +1
+		---
+		Final Destination	Shop (x4)\nMission Reward	All Classes +2
 	Rate Up
 		Iskander					Rider		5*
 		Zhuge Liang (El-Melloi II)	Caster		5*
 		Emiya (Assassin)			Assassin	4*
 		Hassan of the Hundred Faces	Assassin	3*
-	Note: Emiya (Assassin) and Hassan of the Hundred Faces become permanently available
+		---
+		Pre-Awakening				CE			5*
+			Increase DEF by 8%\nIncrease Arts Card effectiveness by 8%\nIncrease Buster Card effectiveness by 8%\nIncrease Quick Card effectiveness by 8%\n
+		Volumen Hydrargyrum			CE			5*
+			Apply Invincible (3 times)\nApply Damage Plus 200
+		Miss Loveless				CE			4*
+			Increase NP Gauge by 4% per turn\nIncrease Quick Card effectiveness by 10%
+		Self Geass Scroll			CE			3*
+			Increase Stun Success Rate by 12%
+	Note: See details for rate up schedule
+	Note: Emiya (Assassin), Hassan of the Hundred Faces, and craft essences become permanently available
 </div>
 <div id="page-header">
 	<div class="description">&ndash; Overview of upcoming events with servant bonuses or releases &ndash;</div>
