@@ -39,7 +39,8 @@
 								ignored if following header row
 							first line if begins with 2+ spaces: becomes header row
 								values must have at least 2 spaces between them
-							extra indent followed by any text: becomes row title text
+							extra indent followed by one or more attrib="value" pairs: becomes attribute/s on preceding row
+							extra indent followed by any plain text: becomes preceding row's title text
 					*Note: (footer notes)
 			Commented lines, such as this description, are ignored
 			*/
@@ -123,7 +124,7 @@
 					if (line.substr(0, 2) == ' '.repeat(2))
 					{
 						var values = line.trim().split(/\s{2,}/);
-						currentTable.push({ type : 'head', values : values });
+						currentTable.push({ type : 'head', values : values, attributes : {} });
 					}
 					else if (line.substr(0, 3) == '---')
 					{
@@ -134,12 +135,25 @@
 					else if (tabDepth == 3)
 					{
 						var lastRow = currentTable[currentTable.length - 1];
-						lastRow.title = line.trim().replace(/\\n/g, "\n");
+						line = line.trim();
+						if (line.match(/[^\s=]+="[^"]+"/)) //matches attrib="value"
+						{
+							var pattern = /([^\s=]+)="([^"]+)"/g;
+							var regs;
+							while (regs = pattern.exec(line))
+							{
+								var attrib = regs[1];
+								var value = regs[2];
+								lastRow.attributes[attrib] = value;
+							}
+						}
+						else
+							lastRow.attributes.title = line.replace(/\\n/g, "\n");
 					}
 					else
 					{
 						var values = line.replace(/\\n/g, '<br/>').split(/\t+/);
-						currentTable.push({ values : values });
+						currentTable.push({ values : values, attributes : {} });
 					}
 				}
 				lastDepth = tabDepth;
@@ -163,7 +177,7 @@
 						(heading) : {
 							tables : [
 								[ //rows
-									{ ?type : head|separator, ?values : [(str), ...], ?title },
+									{ ?type : head|separator, ?values : [(str), ...], attributes : {...} },
 									...
 								],
 								...
@@ -258,7 +272,10 @@
 								markup += '<tr><th>' + row.values.join('</th><th>') + '</th></tr>';
 							else
 							{
-								markup += '<tr class="' + (stripeToggle ? 'light-stripe' : 'dark-stripe' ) + (row.title ? ' tooltipped' : '') + '"' + (row.title ? ' title="' + row.title + '"' : '') + '>';
+								markup += '<tr ' +
+									'class="' + (stripeToggle ? 'light-stripe' : 'dark-stripe' ) + (row.attributes.title ? ' tooltipped' : '') + '"' +
+									format_attributes_string(row.attributes) +
+									'>';
 								for (var _k = 0, _len_k = row.values.length; _k < _len_k; _k++)
 								{
 									var value = row.values[_k];
@@ -285,6 +302,17 @@
 				markup += '</div>'; //event|servant|chapter
 			}
 			return markup;
+		}
+		var format_attributes_string = function (attribs)
+		{
+			var str = '';
+			for (var attrib in attribs)
+			{
+				if (!attribs.hasOwnProperty(attrib))
+					continue;
+				str += ' ' + attrib + '="' + attribs[attrib] + '"';
+			}
+			return str;
 		}
 	}).call(EventsParser);
 	
@@ -629,11 +657,11 @@ London Chapter Release
 		Charles Babbage			Caster		3*
 		---
 		500-Year Obsession	CE			5*
-			Apply NP Seal (2 turns) & Curse (1000 Damage, 10 turns) to enemy killer when you are defeated
+			Apply NP Seal (2 turns) &amp; Curse (1000 Damage, 10 turns) to enemy killer when you are defeated
 		Necromancy				CE			4*
 			Chance to trigger Guts (restore 500 HP) when your HP reaches 0 
 		Awakened Will	CE			4*
-			Chance to increase NP Gauge by 12% each turn &amp; lose 500 HP each turn [Demerit]
+			Chance to increase NP Gauge by 12% each turn\nLose 500 HP each turn [Demerit]
 		Clock Tower				CE			3*
 			Increase your NP Gauge by 2% each turn
 	Note: Available even if you haven't unlocked London
@@ -672,7 +700,7 @@ New Year Pickup Summon
 			Restore 200HP per turn\nDecrease ATK by 10% [Demerit] for yourself
 		Law of the Jungle			CE		3*
 			Increase the amount of QP earned by 2017 when completing quests
-	Note: Karna and Arjuna are limited servants but will be unlocked with E Pluribus Unum
+	Note: Karna and Arjuna are limited servants until the release of E Pluribus Unum
 	Note: See details for rate up schedule
 
 Saber Wars ~Lily's Cosmic Warrior Training~
@@ -880,7 +908,7 @@ E Pluribus Unum Chapter Release
 	Type: Chapter
 	JP: Mar. 30th ~ Apr. 13th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/E_Pluribus_Unum_Chapter_Release
-	Personal Training CE added to Da Vinci's Workshop for 2 months
+	Da Vinci's Workshop : Personal Training CE on rotation (3 months)
 	Rate Up
 		Nightingale					Berserker	5*
 		Helena Blavatsky			Caster		4*
@@ -1036,7 +1064,7 @@ E Pluribus Unum Summoning Campaign 2
 	URL: http://fategrandorder.wikia.com/wiki/E_Pluribus_Unum_Summoning_Campaign_2
 	Rate Up
 		Medb	Rider	5*
-	Note: Available even if you haven't cleared E Pluribus Unum
+	Note: Available even if you haven't unlocked E Pluribus Unum
 
 E Pluribus Unum Summoning Campaign 3
 	Type: Servant
@@ -1045,7 +1073,7 @@ E Pluribus Unum Summoning Campaign 3
 	Rate Up
 		Cú Chulainn (Alter)	Berserker	5*
 		Thomas Edison		Caster		4*
-	Note: Available even if you haven't cleared E Pluribus Unum
+	Note: Available even if you haven't unlocked E Pluribus Unum
 
 Kintoki Summoning Campaign
 	Type: Servant
@@ -1087,6 +1115,78 @@ Restless Drunk Demon's Capital: Rashoumon
 		Tearstone of Blood			Shop (x10)\nMission Reward (x5)
 		Black Tallow				Mission Reward (x5)\nPoint Rewards (x10)
 	Note: Shuten Douji is a limited servant
+
+Starry Sanzang Goes to India
+	Type: Event
+	JP: Jun. 15th ~ 29th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160615.php#nav
+	Rate Up
+		Xuanzang Sanzang		Caster		5*
+		God Spear Li Shuwen		Lancer		4*
+		David					Archer		3*
+		Lu Bu Fengxian			Berserker	3*
+		---
+		Go West!!				CE			5*
+			Increase NP Strength by 20%\nGain 3 Critical Stars per turn
+		True Samadhi Flames		CE			4*
+			Increase NP Strength by 15%\nIncrease Buster Card effectiveness by 8%
+		Tricolor Combination	CE			3*
+			Increase Critical Star Gather Rate by 100%\nIncrease Critical Strength by 5%
+	Event Servants
+		Xuanzang Sanzang				Golden Pills +1
+		Li Shuwen						Peach of Immortality +1
+		Lu Bu Fengxian					Steamed Meat Bun +1
+		David							Steamed Meat Bun +1
+		---
+		Euryale							Large Lotus Flower +1
+		Medusa							Large Lotus Flower +1
+		Stheno							Large Lotus Flower +1
+		Mordred							Large Lotus Flower +1
+		Altria Pendragon (Lancer Alter)	Large Lotus Flower +1
+		Arjuna							Large Lotus Flower +1
+		Karna							Large Lotus Flower +1
+		Nightingale						Large Lotus Flower +1
+	Event CEs
+		Go West!!							Gacha						Golden Pills +1
+		True Samadhi Flames					Gacha						Peach of Immortality +1
+		Tricolor Combination				Gacha						Steamed Meat Bun +1
+		---
+		Heroic Entry: Three Great Heroes	Free Quest\nShop (x4)\nDrop	Merit Talisman +1
+		Princess of Wind and Clouds			Shop (x4)\nDrop				Merit Ball +20%
+		Nine-Headed Bull Demon King			Challenge Quest (x5)\nDrop	Large Lotus Flower +1
+	Notable Items
+		Saint Quartz				Main Quest (x7)
+		Golden Fruit				Free Quest (x8)
+		Crystallized Lore			Shop\nFree Quest
+		Claw of Chaos				Drop
+		Heart of the Foreign God	Shop (x10)\nDrop
+		Dragon's Reverse Scale		Shop (x10)\nDrop
+		Spirit Root					Shop (x10)
+		War Horse's Small Horn		Shop (x20)\nDrop
+		Black Tallow				Shop (x20)\nDrop
+	Note: Xuanzang Sanzang is a limited servant until the release of Camelot
+	Note: Li Shuwen can be summoned even if you haven't cleared E Pluribus Unum
+
+6M Downloads Campaign
+	Type: Servant
+	JP: Jun. 30th ~ Jul. 6th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/6M_Downloads_Campaign
+	Half AP: Free Quests
+	Da Vinci's Workshop : Personal Lesson CE on rotation (3 months)
+	Rate Up
+		Scáthach	Lancer	5*
+		---
+		Bronze-Link Manipulator	CE	3*
+			Increase ATK by 15% (3 turns)
+		Ath nGabla				CE	3*
+			Increase Quick Card effectiveness by 10%\nDecrease DEF by 10% [Demerit]
+		Passing Dream			CE	3*
+			Increase NP Strength by 15% when equipped to an [Assassin] class
+		Extra Spicy Mapo Tofu	CE	3*
+			Increase HP Recovery Amount by 10%
+		Jewel Sword Zelretch	CE	3*
+			Increase NP Gain by 5%\nIncrease NP Gauge by 25% at the start of battle
+	Note: Scáthach is a limited servant
 </div>
 <div id="page-header">
 	<div class="description">&ndash; Overview of major upcoming events based on the JP version &ndash;</div>
