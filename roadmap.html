@@ -8,13 +8,324 @@
 	(function () {
 		var self = this;
 		
+		var Event = (function () {
+			var Event = function (name)
+			{
+				this.name = name;
+				this.topbarInfo = [];
+				this.content = [[]];
+				this.footerNotes = [];
+				this.currentSubsectionBlock = 0;
+				this.currentSubsection;
+				this.currentTable;
+			};
+			
+			Event.prototype = {
+				constructor : Event,
+				generateMarkup : function ()
+				{
+					var markup = '<div class="' + this.type.toLowerCase() + '">';
+					
+					//titlebar
+					markup += '<div class="titlebar">';
+					if (this.url)
+					{
+						markup += '<div class="title">' +
+							'<a class="primary" href="' + this.url + '">' + this.name + '</a>';
+						if (this.urlGuide)
+							markup += ' <a class="guide" href="' + this.urlGuide + '">[guide]</a>';
+						markup += '</div>';
+					}
+					else
+						markup += '<div class="title">' + this.name + '</div>';
+					if (this.jp || this.na)
+					{
+						if (this.jp && this.na)
+						{
+							markup += '<div class="separator double"></div>';
+							markup += '<div class="date"><div>NA: ' + this.na + '</div><div class="dim">JP: ' + this.jp + '</div></div>';
+						}
+						else
+						{
+							markup += '<div class="separator"></div>';
+							markup += '<div class="date"><div>' + (this.na ? 'NA: ' + this.na : 'JP: ' + this.jp) + '</div></div>';
+						}
+					}
+					markup += '</div>';
+					
+					//topbar
+					if (this.topbarInfo.length > 0)
+					{
+						markup += '<div class="topbar">';
+						markup += this.topbarInfo.join('<div class="rule"></div>').replace(/\\n/, '<br/>');
+						markup += '</div>';
+					}
+					
+					//content
+					markup += '<div class="content">';
+					for (var _i = 0, _len_i = this.content.length; _i < _len_i; _i++)
+					{
+						var subsectionBlock = this.content[_i];
+						markup += this.generate_subsection_block_markup(subsectionBlock);
+					}
+					markup += '</div>';
+					
+					//footer
+					if (this.footerNotes.length > 0)
+						markup += '<div class="footer">' + this.footerNotes.join('<br/>') + '</div>';
+					
+					markup += '</div>';
+					return markup;
+				},
+				addSubsection : function (heading)
+				{
+					var newSubsection = {
+						heading : heading,
+						tables : []
+					};
+					this.content[this.currentSubsectionBlock].push(newSubsection);
+					this.currentSubsection = newSubsection;
+				},
+				startNewSubsectionBlock : function ()
+				{
+					this.content.push([]);
+					this.currentSubsectionBlock++;
+					this.currentSubsection = undefined;
+				},
+				addTable : function ()
+				{
+					if (this.currentSubsection)
+					{
+						var newTable = new Table();
+						this.currentSubsection.tables.push(newTable);
+						this.currentTable = newTable;
+					}
+				},
+				
+				generate_subsection_block_markup : function (subsectionBlock)
+				{
+					var markup = '<div class="subsection-block">';
+					for (var _i = 0, _len_i = subsectionBlock.length; _i < _len_i; _i++)
+					{
+						var subsection = subsectionBlock[_i];
+						
+						markup += '<div class="subsection">' +
+							'<div class="head">' + subsection.heading + '</div>';
+						
+						for (var _j = 0, _len_j = subsection.tables.length; _j < _len_j; _j++)
+						{
+							var table = subsection.tables[_j];
+							markup += table.generateMarkup();
+						}
+						markup += '</div>';
+					}
+					markup += '</div>';
+					return markup;
+				}
+			};
+			
+			/*
+			name
+			type
+			?jp
+			?na
+			?url
+			?urlGuide
+			topbarInfo : [*(str)]
+			content : [				//subsectionBlocks
+				[ 					//subsections
+					heading : (str),
+					tables : [*(Table)]
+				]
+			],
+			footerNotes : [*(str)]
+			*/
+
+			return Event;
+		})();
+		
+		var Table = (function () {
+			var Table = function ()
+			{
+				this.rows = [];
+				this.currentRow;
+				this.colCount = 0;
+			};
+			
+			Table.prototype = {
+				constructor : Table,
+				addDataRow : function (values)
+				{
+					this.add_row('data', values);
+				},
+				addHeaderRow : function (values)
+				{
+					this.add_row('header', values);
+				},
+				addSeparatorRow : function ()
+				{
+					if (this.currentRow && this.currentRow.type != 'header')
+						this.add_row('separator');
+				},
+				addCurrentRowAttributes : function (attribObj) // { ('row'|cellIndex) : { (name) : (value), ... }, ... }
+				{
+					if (this.currentRow)
+					{
+						for (var index in attribObj)
+						{
+							if (!attribObj.hasOwnProperty(index))
+								continue;
+							
+							var attribs = attribObj[index];
+							for (var name in attribs)
+							{
+								if (!attribs.hasOwnProperty(name))
+									continue;
+								
+								var value = attribs[name];
+								if (index == 'row')
+									this.currentRow.attributes[name] = value;
+								else if (this.currentRow.cells[index])
+									this.currentRow.cells[index].attributes[name] = value;
+							}
+						}
+					}
+				},
+				generateMarkup : function ()
+				{
+					for (var _i = 0, _len_i = this.rows.length; _i < _len_i; _i++)
+					{
+						var row = this.rows[_i];
+						if (row.cells.length > this.colCount)
+							this.colCount = row.cells.length;
+					}
+					
+					var markup = '<table>' +
+						'<thead>';
+					
+					var headClosed = false;
+					var stripeToggle = false;
+					for (var _i = 0, _len_i = this.rows.length; _i < _len_i; _i++)
+					{
+						var row = this.rows[_i];
+						if (row.type != 'header' && !headClosed)
+						{
+							markup += '</thead><tbody>';
+							headClosed = true;
+						}
+						
+						markup += this.generate_row_markup(row, stripeToggle);
+						
+						if (row.type == 'data')
+							stripeToggle = !stripeToggle;
+					}
+					markup += '</tbody>' +
+						'</table>';
+					return markup;
+				},
+				
+				add_row : function (type, values)
+				{
+					var newRow = {
+						type : type,
+						cells : [],
+						attributes : {}
+					};
+					this.rows.push(newRow);
+					this.currentRow = newRow;
+					
+					if (values)
+					{
+						for (var _i = 0, _len_i = values.length; _i < _len_i; _i++)
+							this.add_cell(values[_i]);
+					}
+				},
+				add_cell : function (value)
+				{
+					if (this.currentRow)
+					{
+						var newCell = {
+							value : value,
+							attributes : {}
+						}
+						this.currentRow.cells.push(newCell);
+					}
+				},
+				generate_row_markup : function (row, stripeToggle)
+				{
+					var markup = '';
+					if (row.type == 'separator')
+						markup += '<tr class="separator"><td colspan="' + this.colCount + '"></td></tr>';
+					else if (row.type == 'header')
+					{
+						markup += '<tr' + format_attributes_string(row.attributes) + '>';
+						for (var _i = 0, _len_i = row.cells.length; _i < _len_i; _i++)
+						{
+							var cell = row.cells[_i];
+							markup += this.generate_cell_markup(cell, true);
+						}
+						markup += '</tr>';
+					}
+					else
+					{
+						var rowClass = (stripeToggle ? 'light-stripe' : 'dark-stripe') + (row.attributes.title ? ' tooltipped' : '');
+						row.attributes.class = (row.attributes.class ? row.attributes.class + ' ' : '') + rowClass;
+						markup += '<tr' + format_attributes_string(row.attributes) + '>';
+						for (var _i = 0, _len_i = row.cells.length; _i < _len_i; _i++)
+						{
+							var cell = row.cells[_i];
+							markup += this.generate_cell_markup(cell);
+						}
+						markup += '</tr>';
+					}
+					return markup;
+				},
+				generate_cell_markup : function (cell, header)
+				{
+					var markup = '';
+					if (header)
+						markup += '<th' + format_attributes_string(cell.attributes) + '>' + cell.value + '</th>';
+					else
+					{
+						var value = cell.value;
+						if (value.match(/^\d\*$/))
+						{
+							cell.attributes.class = (cell.attributes.class ? cell.attributes.class + ' ' : '') + 'rarity';
+							value = value.substring(0, value.length - 1);
+						}
+						markup += '<td' + format_attributes_string(cell.attributes) + '>' + value + '</td>';
+					}
+					return markup;
+				}
+			};
+			
+			/*
+			rows = [
+				{
+					type : data|header|separator,
+					cells : [
+						{
+							value : (str),
+							attributes : { (name) : (value), ... }
+						},
+						...
+					],
+					attributes : { (name) : (value), ... }
+				},
+				...
+			];
+			*/
+			
+			return Table;
+		})();
+		
 		self.init = function ()
 		{
 			var eventsText = document.getElementById('events-text').textContent.split("\n");
 			var displayElem = document.getElementById('events');
 			
-			var eventsObject = parse_text(eventsText);
-			var eventsMarkup = generate_markup(eventsObject);
+			var eventsObjects = parse_text(eventsText);
+			var eventsMarkup = generate_markup(eventsObjects);
 			displayElem.innerHTML = eventsMarkup;
 		}
 		
@@ -26,30 +337,28 @@
 					Type: Event|Servant|Chapter
 					?JP: (date/s)
 					?NA: (date/s)
-					?URL: (url)
-					?Mystic Code: (name)
-					?Half AP: (area/type)
-					?Enhance Up[: (notes/dates)]?
-					*(other subbar info)
-					*(heading)
+					?URL: (url for official news announcement if any or cirno/wiki page if not)
+					?URL-Guide: (url for cirno/wiki guide, if primary URL goes to news announcement but guide still has useful info)
+					*(topbar info) - each value gets own separator-delimited block beneath title bar; \n expands to newline, bypassing separator generation
+					*(subsection heading)
 						(table rows) - can be any of the following:
 							tab-separated values: each becomes own cell in new row
-								any value of the format (digit)* has asterisk stripped and is given class 'rarity'
-							line beginning with ---: becomes separator row
+								any value of the format (digit)* has asterisk stripped and is given class 'rarity' (appends star character)
+							line beginning with --- : becomes separator row
 								ignored if following header row
 							first line if begins with 2+ spaces: becomes header row
 								values must have at least 2 spaces between them
-							extra indent followed by one or more attrib="value" pairs: becomes attribute/s on preceding row
+							extra indent followed by one or more attrib="value" or [index]attrib="value" pairs:
+								becomes attribute/s on preceding row or precededing row's indicated cell (0-index)
 							extra indent followed by any plain text: becomes preceding row's title text
+					line beginning with ----- (5 dashes) : starts new subsection block, grouping subsections so they collapse together
 					*Note: (footer notes)
 			Commented lines, such as this description, are ignored
 			*/
-
-			var eventsObject = {};
+			
+			var eventsObjects = [];
 			var lastDepth = 0;
-			var currentEvent = false;
-			var currentSubsection = false;
-			var currentTable = false;
+			var currentEvent = undefined;
 			var inComment = false;
 			for (var _i = 0, _len_i = eventsText.length; _i < _len_i; _i++)
 			{
@@ -73,244 +382,118 @@
 				
 				if (tabDepth == 0)
 				{
-					var eventName = line.trim();
-					eventsObject[eventName] = { info : [], subsections : {}, notes : [] };
-					currentEvent = eventsObject[eventName];
+					var eventName = line;
+					var newEvent = new Event(eventName);
+					eventsObjects.push(newEvent);
+					currentEvent = newEvent;
 				}
 				else if (tabDepth == 1)
 				{
-					if (line.indexOf('JP: ') === 0)
-						currentEvent.jp = line.substr(4);
-					else if (line.indexOf('NA: ') === 0)
-						currentEvent.na = line.substr(4);
-					else if (line.indexOf('Type: ') === 0)
+					if (line.indexOf('Type: ') == 0)
 						currentEvent.type = line.substr(6);
-					else if (line.indexOf('URL: ') === 0)
+					else if (line.indexOf('JP: ') == 0)
+						currentEvent.jp = line.substr(4);
+					else if (line.indexOf('NA: ') == 0)
+						currentEvent.na = line.substr(4);
+					else if (line.indexOf('URL: ') == 0)
 						currentEvent.url = line.substr(5);
-					else if (line.indexOf('Mystic Code: ') == 0)
-						currentEvent.mysticCode = line.substr(13);
-					else if (line.indexOf('Half AP: ') === 0)
-						currentEvent.halfAP = line.substr(9);
-					else if (line.indexOf('Note: ') === 0)
-						currentEvent.notes.push(line.substr(6));
-					else if (line.indexOf('Enhance Up') === 0)
-					{
-						if (line.indexOf('Enhance Up: ') === 0)
-							currentEvent.enhanceUp = line.substr(12);
-						else
-							currentEvent.enhanceUp = true;
-					}
+					else if (line.indexOf('URL-Guide: ') == 0)
+						currentEvent.urlGuide = line.substr(11);
+					else if (line.indexOf('Note: ') == 0)
+						currentEvent.footerNotes.push(line.substr(6));
+					else if (line.indexOf('-----') == 0)
+						currentEvent.startNewSubsectionBlock();
 					else
 					{
 						var nextLine = eventsText[_i + 1];
 						if (nextLine && nextLine.match(/^\t{2,}/))
 						{
-							var subsectionHeading = line.trim();
-							currentEvent.subsections[subsectionHeading] = { tables : [] };
-							currentSubsection = currentEvent.subsections[subsectionHeading];
+							var subsectionHeading = line;
+							currentEvent.addSubsection(subsectionHeading);
 						}
 						else
-							currentEvent.info.push(line.trim());
+							currentEvent.topbarInfo.push(line);
 					}
 				}
 				else if (tabDepth >= 2)
 				{
 					if (lastDepth == 1)
-					{
-						currentSubsection.tables.push([]);
-						currentTable = currentSubsection.tables[currentSubsection.tables.length - 1];
-					}
+						currentEvent.addTable();
 					
-					if (line.substr(0, 2) == ' '.repeat(2))
+					if (line.indexOf('  ') == 0) //two spaces
 					{
 						var values = line.trim().split(/\s{2,}/);
-						currentTable.push({ type : 'head', values : values, attributes : {} });
+						currentEvent.currentTable.addHeaderRow(values);
 					}
-					else if (line.substr(0, 3) == '---')
+					else if (line.indexOf('---') == 0)
 					{
-						var lastRow = currentTable[currentTable.length - 1];
-						if (lastRow && lastRow.type != 'head')
-							currentTable.push({ type : 'separator' });
+						currentEvent.currentTable.addSeparatorRow();
 					}
 					else if (tabDepth == 3)
 					{
-						var lastRow = currentTable[currentTable.length - 1];
-						line = line.trim();
 						if (line.match(/[^\s=]+="[^"]+"/)) //matches attrib="value"
-						{
-							var pattern = /([^\s=]+)="([^"]+)"/g;
-							var regs;
-							while (regs = pattern.exec(line))
-							{
-								var attrib = regs[1];
-								var value = regs[2];
-								lastRow.attributes[attrib] = value;
-							}
-						}
+							var attribs = parse_attributes_string(line);
 						else
-							lastRow.attributes.title = line.replace(/\\n/g, "\n");
+							var attribs = parse_attributes_string('title="' + line.replace(/\\n/g, "\n") + '"');
+						currentEvent.currentTable.addCurrentRowAttributes(attribs);
 					}
 					else
 					{
 						var values = line.replace(/\\n/g, '<br/>').split(/\t+/);
-						currentTable.push({ values : values, attributes : {} });
+						currentEvent.currentTable.addDataRow(values);
 					}
 				}
 				lastDepth = tabDepth;
 			}
-			return eventsObject;
+			return eventsObjects;
 		}
-		var generate_markup = function (eventsObject)
+		var generate_markup = function (eventsObjects)
 		{
-			/*
-			eventsObject {
-				(event name) : {
-					type
-					?jp
-					?na
-					?url
-					?mysticCode
-					?halfAP
-					?enhanceUp
-					info : [(str), ...]
-					subsections : {
-						(heading) : {
-							tables : [
-								[ //rows
-									{ ?type : head|separator, ?values : [(str), ...], attributes : {...} },
-									...
-								],
-								...
-							]
-						}
-					},
-					notes : [(str), ...]
-				},
-				...
-			}
-			*/
-			
 			var markup = '';
-			for (var eventName in eventsObject)
+			for (var _i = 0, _len_i = eventsObjects.length; _i < _len_i; _i++)
 			{
-				if (!eventsObject.hasOwnProperty(eventName))
-					continue;
-				var event = eventsObject[eventName];
-				
-				markup += '<div class="' + event.type.toLowerCase() + '">';
-				
-				markup += '<div class="titlebar">';
-				markup += '<div class="title">' + (event.url ? '<a href="' + event.url + '" target="_blank">' + eventName + '</a>' : eventName) + '</div>';
-				if (event.jp || event.na)
-				{
-					markup += '<div class="separator' + (event.jp && event.na ? ' double' : '') + '"></div>';
-					markup += '<div class="date">' +
-						(event.na ? 'NA: ' + event.na : '') +
-						(event.na && event.jp ? '<br/>' : '') +
-						(event.jp ? 'JP: ' + event.jp : '') +
-					'</div>';
-				}
-				markup += '</div>';
-				
-				if (event.mysticCode || event.halfAP || event.enhanceUp || event.info.length > 0)
-				{
-					markup += '<div class="subbar">';
-					var children = [];
-					if (event.mysticCode)
-						children.push('Mystic Code Release : ' + event.mysticCode);
-					if (event.halfAP)
-						children.push('Half AP : ' + event.halfAP);
-					if (event.enhanceUp)
-						children.push('Super & Great Success Rates Up' + (typeof event.enhanceUp == 'string' ? ' : ' + event.enhanceUp : ''));
-					if (event.info.length > 0)
-						children.push(event.info.join('<br/>'));
-					markup += children.join('<div class="rule"></div>');
-					markup += '</div>';
-				}
-				
-				markup += '<div class="content">' +
-					'<div class="subsections">';
-				
-				for (var subsectionHeading in event.subsections)
-				{
-					if (!event.subsections.hasOwnProperty(subsectionHeading))
-						continue;
-					var subsection = event.subsections[subsectionHeading];
-					
-					markup += '<div class="subsection">' +
-						'<div class="head">' + subsectionHeading + '</div>';
-					
-					for (var _i = 0, _len_i = subsection.tables.length; _i < _len_i; _i++)
-					{
-						var table = subsection.tables[_i];
-						
-						markup += '<table>' +
-							'<thead>';
-						
-						var colCount = 0;
-						for (var _j = 0, _len_j = table.length; _j < _len_j; _j++)
-						{
-							var row = table[_j];
-							if (row.values && row.values.length > colCount)
-								colCount = row.values.length;
-						}
-						
-						var headClosed = false;
-						var stripeToggle = false;
-						for (var _j = 0, _len_j = table.length; _j < _len_j; _j++)
-						{
-							var row = table[_j];
-							if (row.type != 'head' && !headClosed)
-							{
-								markup += '</thead><tbody>';
-								headClosed = true;
-							}
-							
-							if (row.type == 'separator')
-								markup += '<tr class="separator"><td colspan="' + colCount + '"></td></tr>';
-							else if (row.type == 'head')
-								markup += '<tr><th>' + row.values.join('</th><th>') + '</th></tr>';
-							else
-							{
-								markup += '<tr ' +
-									'class="' + (stripeToggle ? 'light-stripe' : 'dark-stripe' ) + (row.attributes.title ? ' tooltipped' : '') + '"' +
-									format_attributes_string(row.attributes) +
-									'>';
-								for (var _k = 0, _len_k = row.values.length; _k < _len_k; _k++)
-								{
-									var value = row.values[_k];
-									if (value.match(/^\d\*$/))
-										markup += '<td class="rarity">' + value.substring(0, value.length - 1) + '</td>';
-									else
-										markup += '<td>' + value + '</td>';
-								}
-								markup += '</tr>';
-								stripeToggle = !stripeToggle;
-							}
-						}
-						markup += '</tbody>' +
-							'</table>';
-					}
-					markup += '</div>'; //subsection
-				}
-				markup += '</div>'; //subsections
-				
-				if (event.notes.length > 0)
-					markup += '<div class="note">' + event.notes.join('<br/>') + '</div>';
-				
-				markup += '</div>'; //content
-				markup += '</div>'; //event|servant|chapter
+				var eventObject = eventsObjects[_i];
+				markup += eventObject.generateMarkup();
 			}
 			return markup;
+		}
+		var parse_attributes_string = function (str)
+		{
+			var attribObj = {};
+			var pattern = /(?:\[([\d\]\[]+)\])?([^\s=]+)="([^"]+)"/g;
+			var regs;
+			while (regs = pattern.exec(str))
+			{
+				var indices = regs[1];
+				var name = regs[2];
+				var value = regs[3];
+				if (!indices)
+					indices = ['row'];
+				else
+					indices = indices.split('][');
+				
+				for (var _i = 0, _len_i = indices.length; _i < _len_i; _i++)
+				{
+					var index = indices[_i];
+					if (!index.match(/^(?:\d+|row)$/))
+						continue;
+					
+					if (!attribObj.hasOwnProperty(index))
+						attribObj[index] = {};
+					attribObj[index][name] = value;
+				}
+			}
+			return attribObj;
 		}
 		var format_attributes_string = function (attribs)
 		{
 			var str = '';
-			for (var attrib in attribs)
+			for (var name in attribs)
 			{
-				if (!attribs.hasOwnProperty(attrib))
+				if (!attribs.hasOwnProperty(name))
 					continue;
-				str += ' ' + attrib + '="' + attribs[attrib] + '"';
+				var value = attribs[name];
+				str += ' ' + name + '="' + value + '"';
 			}
 			return str;
 		}
@@ -324,10 +507,13 @@
 	:root {
 		--event-light: #E8F0FF;
 		--event-dark: #C8D0F0;
+		--event-medium: #D8E0F8;
 		--servant-light: #FFFFE8;
 		--servant-dark: #E0E0C8;
+		--servant-medium: #F0F0D8;
 		--chapter-light: #FFE8E8;
 		--chapter-dark: #F0C8C8;
+		--chapter-medium: #F8D8D8;
 	}
 	body {
 		background-color: white;
@@ -381,10 +567,16 @@
 		flex-grow: 0;
 		font-size: 16pt;
 	}
-	#events .titlebar .title a {
+	#events .titlebar .title a.primary {
 		color: black;
 		text-decoration: underline dotted rgba(0, 0, 0, 0.5);
 		line-height: 140%;
+	}
+	#events .titlebar .title a.guide {
+		color: black;
+		text-decoration: none;
+		font-size: 10pt;
+		vertical-align: super;
 	}
 	#events .titlebar .separator {
 		flex-grow: 1;
@@ -398,49 +590,54 @@
 	#events .titlebar .date {
 		flex-grow: 0;
 	}
-	#events .subbar {
+	#events .titlebar .date .dim {
+		color: #606060;
+	}
+	#events .topbar {
 		padding: 4px;
 		border-width: 1px;
 		border-style: solid;
 		border-radius: 0 0 10px 10px;
 	}
-	#events .subbar .rule {
+	#events .topbar .rule {
 		height: 1px;
 		margin: 2px 0;
 		border-top-width: 1px;
 		border-top-style: solid;
 	}
-	#events .event .subbar,
-	#events .event .subbar .rule {
+	#events .event .topbar,
+	#events .event .topbar .rule {
 		border-color: var(--event-dark);
 		background-color: var(--event-light);
 	}
-	#events .servant .subbar,
-	#events .servant .subbar .rule {
+	#events .servant .topbar,
+	#events .servant .topbar .rule {
 		border-color: var(--servant-dark);
 		background-color: var(--servant-light);
 	}
-	#events .chapter .subbar,
-	#events .chapter .subbar .rule {
+	#events .chapter .topbar,
+	#events .chapter .topbar .rule {
 		border-color: var(--chapter-dark);
 		background-color: var(--chapter-light);
 	}
 	#events .content {
-		padding: 4px;
+		display: flex;
+		margin: 4px 4px 0 4px;
+		flex-wrap: wrap;
+		justify-content: center;
 		text-align: center;
 	}
 	#events .head {
 		margin-bottom: 4px;
 		font-weight: bold;
 	}
-	#events .subsections {
+	#events .subsection-block {
 		display: flex;
 		flex-wrap: wrap;
-		justify-content: space-around;
-		margin-bottom: 4px;
+		justify-content: center;
 	}
 	#events .subsection {
-		margin: 0 4px;
+		margin: 0 4px 8px 4px;
 	}
 	#events .content table {
 		border-width: 1px;
@@ -476,11 +673,17 @@
 	#events .content td.rarity:after {
 		content: '\2605'
 	}
+	#events .content td[rowspan] {
+		text-align: center;
+	}
 	#events .event .content tr.light-stripe {
 		background-color: var(--event-light);
 	}
 	#events .event .content tr.dark-stripe {
 		background-color: var(--event-dark);
+	}
+	#events .event .content td[rowspan] {
+		background-color: var(--event-medium);
 	}
 	#events .servant .content tr.light-stripe {
 		background-color: var(--servant-light);
@@ -488,14 +691,21 @@
 	#events .servant .content tr.dark-stripe {
 		background-color: var(--servant-dark);
 	}
+	#events .servant .content td[rowspan] {
+		background-color: var(--servant-medium);
+	}
 	#events .chapter .content tr.light-stripe {
 		background-color: var(--chapter-light);
 	}
 	#events .chapter .content tr.dark-stripe {
 		background-color: var(--chapter-dark);
 	}
-	#events .note {
-		margin-top: 8px;
+	#events .chapter .content td[rowspan] {
+		background-color: var(--chapter-medium);
+	}
+	#events .footer {
+		margin: 0 4px 4px 4px;
+		text-align: center;
 		font-style: italic;
 	}
 	#page-header {
@@ -515,146 +725,147 @@
 </head>
 <body>
 <div id="events-text">
-/*
-Fate/GUDAGUDA Honnoji
-	Type: Event
-	JP: Nov. 25th ~ Dec. 11th, 2015
-	NA: Nov. 8th ~ 24th, 2017
-	URL: http://fate-go.cirnopedia.org/quest_event_20151125.php#nav
-	Event Servants
-		     Name        Reward Points
-		------------------------------
-		Okita Souji			+100%
-		---
-		Oda Nobunaga		 +60%
-		---
-		Emiya				 +40%
-		---
-		Cú Chulainn			 +20%
-		Medusa				 +20%
-		Mephistopheles 		 +20%
-		Ushiwakamaru		 +20%
-		Musashibou Benkei	 +20%
-	Rate Up
-		Okita Souji		Saber	5*
-		Emiya			Archer	4*
-		Cú Chulainn		Lancer	3*
-		Medusa			Rider	3*
-		Mephistopheles	Caster	3* 
-	Note: Oda Nobunaga &amp; ascension materials available in event shop
+	/*
+	Fate/GUDAGUDA Honnoji
+		Type: Event
+		JP: Nov. 25th ~ Dec. 11th, 2015
+		NA: Nov. 8th ~ 24th, 2017
+		URL: http://fate-go.cirnopedia.org/quest_event_20151125.php#nav
+		Event Servants
+				 Name        Reward Points
+			------------------------------
+			Okita Souji			+100%
+			---
+			Oda Nobunaga		 +60%
+			---
+			Emiya				 +40%
+			---
+			Cú Chulainn			 +20%
+			Medusa				 +20%
+			Mephistopheles 		 +20%
+			Ushiwakamaru		 +20%
+			Musashibou Benkei	 +20%
+		Rate Up
+			Okita Souji		Saber	5*
+			Emiya			Archer	4*
+			Cú Chulainn		Lancer	3*
+			Medusa			Rider	3*
+			Mephistopheles	Caster	3* 
+		Note: Oda Nobunaga &amp; ascension materials available in event shop
 
-The FGO Thanksgiving Special
-	Type: Event
-	JP: Dec. 9th ~	16th, 2015
-	NA: Nov. 22nd ~ Dec. 1st, 2017
-	URL: http://fategrandorder.wikia.com/wiki/Thanksgiving_2017_Event_(US)
-	Half AP: All dailies
-	Rate Up
-		Scáthach			Lancer		5*
-		Gilgamesh			Archer		5*
-		Sakata Kintoki		Berserker	5*
-		Medea (Lily)		Caster		4*
-		Diarmuid Ua Duibhne	Lancer		3*
-		Fergus Mac Roich	Saber		3*
-	Paid Gacha
-		Altria Pendragon			Saber		5*
-		Altera						Saber		5*
-		Okita Souji					Saber		5*
-		Orion						Archer		5*
-		Francis Drake				Rider		5*
-		Zhuge Lange (El-Melloi II)	Caster		5*
-		Tamamo-no-Mae				Caster		5*
-		Vlad III					Berserker	5*
-		Jeanne d'Arc				Ruler		5*
-	Da Vinci's Workshop
-		     Item               Expires
-		-----------------------------------
-		Mona Lisa CE (x5)	Feb. 22nd, 2018
-		Grab Bag			Dec. 19th, 2017
-		Material Grab Bag	Dec. 19th, 2017
+	The FGO Thanksgiving Special
+		Type: Event
+		JP: Dec. 9th ~	16th, 2015
+		NA: Nov. 22nd ~ Dec. 1st, 2017
+		URL: http://fategrandorder.wikia.com/wiki/Thanksgiving_2017_Event_(US)
+		Half AP : All dailies
+		Rate Up
+			Scáthach			Lancer		5*
+			Gilgamesh			Archer		5*
+			Sakata Kintoki		Berserker	5*
+			Medea (Lily)		Caster		4*
+			Diarmuid Ua Duibhne	Lancer		3*
+			Fergus Mac Roich	Saber		3*
+		Paid Gacha
+			Altria Pendragon			Saber		5*
+			Altera						Saber		5*
+			Okita Souji					Saber		5*
+			Orion						Archer		5*
+			Francis Drake				Rider		5*
+			Zhuge Lange (El-Melloi II)	Caster		5*
+			Tamamo-no-Mae				Caster		5*
+			Vlad III					Berserker	5*
+			Jeanne d'Arc				Ruler		5*
+		Da Vinci's Workshop
+				 Item               Expires
+			-----------------------------------
+			Mona Lisa CE (x5)	Feb. 22nd, 2018
+			Grab Bag			Dec. 19th, 2017
+			Material Grab Bag	Dec. 19th, 2017
 
-Almost Weekly Santa Alter
-	Type: Event
-	JP: Dec. 16th ~ 25th, 2015
-	NA: Dec. 1st ~ 11th, 2017
-	URL: http://fate-go.cirnopedia.org/quest_event_us_20171201.php#nav
-	Altria Pendragon (Santa Alter) available in event shop
-	Event Servants
-			       Name                Class  Magic Stocking
-		----------------------------------------------------
-		Altria Pendragon (Santa Alter)	Rider		+4
-		---
-		Jack the Ripper					Assassin	+3
-		---
-		Marie Antoinette				Rider		+2
-		Martha							Rider		+2
-		Nursery Rhyme					Caster		+2
-		---
-		Gaius Julius Caesar				Saber		+1
-		Robin Hood						Archer		+1
-		Jing Ke							Assassin	+1
-		Darius III						Berserker	+1
-		David							Archer		+1
-		Phantom of the Opera			Assassin	+1
-	Rate Up
-		Jack the Ripper		Assassin	5*
-		Nursery Rhyme		Caster		4*
-		Marie Antoinette	Rider		4*
-		Robin Hood			Archer		3*
-		Jing Ke				Assassin	3*
+	Almost Weekly Santa Alter
+		Type: Event
+		JP: Dec. 16th ~ 25th, 2015
+		NA: Dec. 1st ~ 11th, 2017
+		URL: http://fate-go.cirnopedia.org/quest_event_us_20171201.php#nav
+		Altria Pendragon (Santa Alter) available in event shop
+		Event Servants
+					   Name                Class  Magic Stocking
+			----------------------------------------------------
+			Altria Pendragon (Santa Alter)	Rider		+4
+			---
+			Jack the Ripper					Assassin	+3
+			---
+			Marie Antoinette				Rider		+2
+			Martha							Rider		+2
+			Nursery Rhyme					Caster		+2
+			---
+			Gaius Julius Caesar				Saber		+1
+			Robin Hood						Archer		+1
+			Jing Ke							Assassin	+1
+			Darius III						Berserker	+1
+			David							Archer		+1
+			Phantom of the Opera			Assassin	+1
+		Rate Up
+			Jack the Ripper		Assassin	5*
+			Nursery Rhyme		Caster		4*
+			Marie Antoinette	Rider		4*
+			Robin Hood			Archer		3*
+			Jing Ke				Assassin	3*
 
-Singularity Pickup Summon
-	Type: Servant
-	NA: Dec. 11th ~ 19th, 2017
-	URL: https://webview.fate-go.us/iframe/2017/1208_singularity_pu/
-	Half AP: Main Quests
-	Rate Up, Fuyuki
-		Altria Pendragon			Saber		5*
-		Altria Pendragon (Alter)	Saber		4*
-		Emiya						Archer		4*
-		Heracles					Berserker	4*
-		Cú Chulainn					Lancer		3*
-		Medusa						Rider		3*
-		Cú Chulainn (Caster)		Caster		3*
-		Medea						Caster		3*
-	Rate Up, Orleans
-		Vlad III				Berserker	5*
-		Jeanne d'Arc			Ruler		5*
-		Chevalier d'Eon			Saber		4*
-		Carmilla				Assassin	4*
-		Gilles de Rais			Saber		3*
-		Gilles de Rais (Caster)	Caster		3*
-		Kiyohime				Berserker	3*
-	Rate Up, Septem
-		Altera							Saber	5*
-		Zhuge Liang (Lord El-Melloi II)	Caster	5*
-		Nero Claudius					Saber	4*
-		Elisabeth Báthory				Lancer	4*
-		Gaius Julius Caesar				Saber	3*
-		Romulus							Lancer	3*
-		Boudica 						Rider	3*
-	Rate Up, Okeanos
-		Orion						Archer	5*
-		Francis Drake				Rider	5*
-		Anne Bonny &amp; Mary Read	Rider	4*
-		Medea (Lily)				Caster	4*
-		Euryale						Archer	3*
-		David						Archer	3*
-		Hektor 						Lancer	3*
-	Note: See details for rate up schedule
-*/
+	Singularity Pickup Summon
+		Type: Servant
+		NA: Dec. 11th ~ 19th, 2017
+		URL: https://webview.fate-go.us/iframe/2017/1208_singularity_pu/
+		Half AP : Main Quests
+		Rate Up, Fuyuki
+			Altria Pendragon			Saber		5*
+			Altria Pendragon (Alter)	Saber		4*
+			Emiya						Archer		4*
+			Heracles					Berserker	4*
+			Cú Chulainn					Lancer		3*
+			Medusa						Rider		3*
+			Cú Chulainn (Caster)		Caster		3*
+			Medea						Caster		3*
+		Rate Up, Orleans
+			Vlad III				Berserker	5*
+			Jeanne d'Arc			Ruler		5*
+			Chevalier d'Eon			Saber		4*
+			Carmilla				Assassin	4*
+			Gilles de Rais			Saber		3*
+			Gilles de Rais (Caster)	Caster		3*
+			Kiyohime				Berserker	3*
+		Rate Up, Septem
+			Altera							Saber	5*
+			Zhuge Liang (Lord El-Melloi II)	Caster	5*
+			Nero Claudius					Saber	4*
+			Elisabeth Báthory				Lancer	4*
+			Gaius Julius Caesar				Saber	3*
+			Romulus							Lancer	3*
+			Boudica 						Rider	3*
+		Rate Up, Okeanos
+			Orion						Archer	5*
+			Francis Drake				Rider	5*
+			Anne Bonny &amp; Mary Read	Rider	4*
+			Medea (Lily)				Caster	4*
+			Euryale						Archer	3*
+			David						Archer	3*
+			Hektor 						Lancer	3*
+		Note: See details for rate up schedule
+	*/
+
 London Chapter Release
 	Type: Chapter
 	NA: Dec. 19th, 2017 ~ Jan. 4th, 2018
 	JP: Dec. 28th, 2015 ~ Jan. 13th, 2016
 	URL: https://webview.fate-go.us/2017/1215_fourth_singularity_london/
-	Mystic Code: Chaldea Combat Uniform, Mage's Association Uniform, Atlas Institute Uniform
+	Mystic Code : Chaldea Combat Uniform, Mage's Association Uniform, Atlas Institute Uniform
 	Rate Up
-		Mordred					Saber		5*
-		Frankenstein			Berserker	4*
-		Henry Jekyll &amp; Hyde	Assassin	3*
-		Paracelsus von Hohenheim				Caster		3*
-		Charles Babbage			Caster		3*
+		Mordred						Saber		5*
+		Frankenstein				Berserker	4*
+		Henry Jekyll &amp; Hyde		Assassin	3*
+		Paracelsus von Hohenheim	Caster		3*
+		Charles Babbage				Caster		3*
 		---
 		500-Year Obsession	CE			5*
 			Apply NP Seal (2 turns) &amp; Curse (1000 Damage, 10 turns) to enemy killer when you are defeated
@@ -672,18 +883,18 @@ London Pickup 2 Summon
 	NA: Dec. 26th, 2017 ~ Jan. 4th, 2018
 	JP: Jan. 13th ~ 20th, 2016
 	URL: https://webview.fate-go.us/2017/1225_London_pu2/
-	Half AP: Ember Gathering
+	Half AP : Ember Gathering
 	Rate Up
 		Nikola Tesla						Archer	5*
 		Altria Pendragon (Alter Lancer)		Lancer	4*
 	Note: Available even if you haven't unlocked London
 
 New Year Pickup Summon
-	Type: Event
+	Type: Servant
 	NA: Dec. 28th, 2017 ~ Jan. 4th, 2018
 	JP: Jan. 1st ~ 13th, 2016
 	URL: https://webview.fate-go.us/iframe/2017/1226_new_year/
-	Half AP: Training Grounds
+	Half AP : Training Grounds
 	Rate Up
 		Karna						Lancer	5*
 		Arjuna						Archer	5*
@@ -709,6 +920,7 @@ Saber Wars ~Lily's Cosmic Warrior Training~
 	NA: Jan. 4th ~ 18th, 2017
 	JP: Jan. 20th ~ Feb. 3rd, 2016
 	URL: https://webview.fate-go.us/iframe/2018/0102_saberwars/
+	URL-Guide: http://fate-go.cirnopedia.org/quest_event_20160120.php#nav
 	Rate Up
 		Mysterious Heroine X			Assassin	5*
 		Nero Claudius					Saber		4*
@@ -720,32 +932,37 @@ Saber Wars ~Lily's Cosmic Warrior Training~
 			Chance to restore your HP by 750 per turn
 		Trueshot		CE			3*
 			Apply Sure Hit\nIncrease Critical Strength by 3%
+	Event CEs
+		The Crimson Land of Shadows		Gacha							Vacuum Tube +1
+		Mikotto! Bride Training			Gacha							All-Purpose Lens +1
+		Trueshot						Gacha							Transistor +1
+		---
+		Star of Altria					Point Reward (x6)\nDrop			Own Attack +50%
+		Purely Bloom					Point Reward\nShop (x4)\nDrop	Own Attack +100%
+	-----
 	Event Servants
 		       Name               Damage  Reward Points
 		------------------------------------------------
 		Mysterious Heroine X		+100% 	+50%
-		Altria Pendragon (Lily)		+100% 	+50%
+			[1][2]rowspan="2"
+		Altria Pendragon (Lily)
 		------------------------------------------------
 		Altria Pendragon (Alter)	 +80% 	+30%
-		Nero Claudius				 +80% 	+30%
+			[1][2]rowspan="2"
+		Nero Claudius
 		------------------------------------------------
 		Altria Pendragon			 +60% 	+20%
-		Siegfried					 +60% 	+20%
-		Altera						 +60% 	+20%
-		Chevalier d'Eon				 +60% 	+20%
-		Okita Souji					 +60% 	+20%
-		Mordred						 +60% 	+20%
+			[1][2]rowspan="6"
+		Siegfried
+		Altera
+		Chevalier d'Eon
+		Okita Souji
+		Mordred
 		------------------------------------------------
 		Gaius Julius Caesar			 +40% 	+10%
-		Gilles de Rais				 +40% 	+10%
-		Fergus Mac Roich			 +40% 	+10%
-	Event CEs
-		The Crimson Land of Shadows	Gacha							Vacuum Tube +1
-		Mikotto! Bride Training		Gacha							All-Purpose Lens +1
-		Trueshot		Gacha							Transistor +1
-		---
-		Star of Altria					Point Reward (x6)\nDrop			Own Attack +50%
-		Purely Bloom					Point Reward\nShop (x4)\nDrop	Own Attack +100%
+			[1][2]rowspan="3"
+		Gilles de Rais
+		Fergus Mac Roich
 	Notable Items
 		Altria Pendragon (Lily)		Point Rewards (x5)
 		---
@@ -756,17 +973,16 @@ Saber Wars ~Lily's Cosmic Warrior Training~
 		Heart of the Foreign God	Point Rewards (x10)\nChallenge Quests (x9)\nDrop
 		Dragon's Reverse Scale		Shop (x10)\nChallenge Quests (x9)\nDrop
 		Mana Prism					Point Rewards (x1,040)
-		
 	Note: Mysterious Heroine X is a limited servant
 
 5M Downloads Campaign
-	Type: Event
+	Type: Servant
 	JP: Feb. 3rd ~ 10th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/5M_Downloads_Campaign
-	Mystic Code: Anniversary Blonde
+	Mystic Code : Anniversary Blonde
 	Batch of 10 different Heroic Spirit Portraits available (can only choose 1)
 	Rate Up
-		Brynhildr				Lancer		5*
+		Brynhild				Lancer		5*
 		Beowulf					Berserker	4*
 		Fionn mac Cumhail		Lancer		4*
 		---
@@ -838,13 +1054,16 @@ Kara no Kyoukai / The Garden of Order
 	Event CEs
 		    Name                    Acquired      Item Bonus
 		Grand Puppet Master			Gacha	Black Cat Figurine +1
-		Mature Gentleman			Gacha	Black Cat Figurine +1
+			[1][2]rowspan="2"
+		Mature Gentleman			
 		---
 		Brilliant War Dancer		Gacha	Strawberry Ice Cream +1
-		Mystic Eyes of Distortion	Gacha	Strawberry Ice Cream +1
+			[1][2]rowspan="2"
+		Mystic Eyes of Distortion	
 		---
 		Repeat Magic				Gacha	Mineral Water +1
-		Sprinter					Gacha	Mineral Water +1
+			[1][2]rowspan="2"
+		Sprinter					
 		---
 		   Name                     Acquired                      Spawn Bonus
 		Beheading Bunny 2016		Shop (x5)\nDrop					Septet Assistant Lady +25%
@@ -898,10 +1117,10 @@ Chaldea Boys Collection
 	Note: See details for rate up schedule
 
 Prison Tower's Howling Demon of Vengeance
-	Type: Event
+	Type: Servant
 	JP: Mar. 9th ~ 23rd, 2016
 	URL: http://fate-go.cirnopedia.org/quest_event_20160316.php#nav
-	Half AP: London Main Quests
+	Half AP : London Main Quests
 	Rate Up
 		Edmond Dantes / Count of Monte Cristo	Avenger	5*
 	Note: Limited servant
@@ -939,29 +1158,33 @@ Da Vinci and the Seven Fake Heroic Spirits
 			Increase damage against [Humanoid] by 25%
 		Gentle Affection		CE		3*
 			Increase HP Recovery Amount by 15%
-	Event Servants
-		  Class        Manuscript Bonus
-		Shielder	True +1 &amp; False +1
-		Ruler		True +1 &amp; False +1
-		Avenger		True +1 &amp; False +1
-		---
-		Saber		True +1
-		Lancer		True +1
-		Archer		True +1
-		---
-		Rider		False +1
-		Caster		False +1
-		Assassin	False +1
-		Berserker	False +1
 	Event CEs
 		Venomous Snake Art		Gacha				Self Portrait (False) +1
 		Art of Death			Gacha				Human Anatomy (False) +1
 		Gentle Affection		Gacha				Mona Lisa (False) +1
 		---
-		Empieta					Lottery\nDrop		True enemy spawn +100%
-		Maiden Leading Chaldea	Lottery\nDrop		False enemy spawn +100%
+		Empieta					Lottery (x5)\nDrop	True enemy spawn +100%
+		Maiden Leading Chaldea	Lottery (x5)\nDrop	False enemy spawn +100%
 		---
 		School of Chaldea		Shop (x4)\nDrop		Manuscript (True) +2\nManuscript (False) +2
+	-----
+	Event Servants
+		  Class        Manuscript Bonus
+		Shielder	True +1\nFalse +1
+			[1]rowspan="3"
+		Ruler
+		Avenger
+		---
+		Saber		True +1
+			[1]rowspan="3"
+		Lancer
+		Archer
+		---
+		Rider		False +1
+			[1]rowspan="4"
+		Caster
+		Assassin
+		Berserker
 	Notable Items
 		Holy Grail					Main Quest
 		Saint Quartz				Main Quests (x7)
@@ -980,7 +1203,7 @@ Fate/Accel Zero Order Pre-Event Campaign
 	Type: Servant
 	JP: Apr. 21st ~ 27th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/Fate/Accel_Zero_Order_(Pre-Event)
-	Mystic Code: Royal Brand
+	Mystic Code : Royal Brand
 	Rate Up
 		Altria Pendragon		Saber		5*
 		Gilgamesh				Archer		5*
@@ -1008,31 +1231,6 @@ Fate/Accel Zero Order
 			Increase NP Gauge by 4% per turn\nIncrease Quick Card effectiveness by 10%
 		Self Geass Scroll			CE			3*
 			Increase Stun Success Rate by 12%
-	Event Servants
-		      Name             Emblem Bonus
-		---------------------------------------
-		Altria Pendragon			+3 Lancer
-		Gilles de Rais				+3 Lancer
-		---
-		Gilgamesh					+3 Saber
-		Child Gil					+3 Saber
-		---
-		Diarmuid Ua Duibhne			+3 Archer
-		---
-		Alexander					+3 Caster
-		Iskandar					+3 Caster
-		---
-		Zhuge Liang (El-Melloi II)	+3 Assassin
-		Gilles de Rais (Caster)		+3 Assassin
-		Irisviel (Dress of Heaven)	+3 Assassin
-		---
-		Hassan of the Cursed Arm	+3 Rider
-		Hassan of the Hundred Faces	+3 Rider
-		Emiya (Assassin)			+3 Rider
-		---
-		Lancelot					+3 Berserker
-		---
-		Angra Mainyu				+3 All
 	Event CEs
 		       Name         Acquired                           Emblem Bonus
 		Pre-Awakening		Gacha							Equipped Class +3
@@ -1041,6 +1239,40 @@ Fate/Accel Zero Order
 		Self Geass Scroll	Quest Reward\nGacha				Equipped Class +1
 		---
 		Final Destination	Shop (x4)\nMission Reward\nDrop	All Classes +2
+	-----
+	Event Servants
+		      Name             Emblem Bonus
+		---------------------------------------
+		Altria Pendragon			Lancer +3
+			[1]rowspan="2"
+		Gilles de Rais
+		---
+		Gilgamesh					Saber +3
+			[1]rowspan="2"
+		Child Gil
+		---
+		Diarmuid Ua Duibhne			Archer +3
+			[1]rowspan="1"
+		---
+		Alexander					Caster +3
+			[1]rowspan="2"
+		Iskandar
+		---
+		Zhuge Liang (El-Melloi II)	Assassin +3
+			[1]rowspan="3"
+		Gilles de Rais (Caster)
+		Irisviel (Dress of Heaven)
+		---
+		Hassan of the Cursed Arm	Rider +3
+			[1]rowspan="3"
+		Hassan of the Hundred Faces
+		Emiya (Assassin)
+		---
+		Lancelot					Berserker +3
+			[1]rowspan="1"
+		---
+		Angra Mainyu				All +3
+			[1]rowspan="1"
 	Notable Items
 		Irisviel (Holy Grail)				Quest Reward (x5)
 		Crystal Ball\n(ascension material)	Quest Reward (x4)
@@ -1049,6 +1281,7 @@ Fate/Accel Zero Order
 		Summon Ticket						Mission Rewards (x6)
 		Saint Quartz						Quest Reward (x3)\nMission Reward (x6)
 		Golden Fruit						Quest Reward (x11)\nMission Rewards (x3)
+		Crystallized Lore					Mission Rewards (x2)
 		Claw of Chaos						Mission Rewards (x10)\nDrop
 		Heart of the Foreign God			Mission Rewards (x10)\nDrop
 		Dragon's Reverse Scale				Shop (x10)\nDrop
@@ -1103,10 +1336,10 @@ Restless Drunk Demon's Capital: Rashoumon
 		Burning Love Story			Gacha							Demon Gourd +2
 		Subscription List Reading	Main Quest\nGacha				Demon Gourd +1
 		---
-		Wandering Tales of Shanaou	Point Reward\nShop (x4)\nDrop	Own Attack +200%
+		Wandering Tales of Shanaou	Shop (x4)\nPoint Reward\nDrop	Own Attack +200%
 		Golden Catches a Carp		Point Reward (x6)\nDrop			Party Attack +100%
 	Notable Items
-		Summon Ticket				Main Quest\nMission Rewards (x6)\nPoint Rewards (x5)
+		Summon Ticket				Main Quest\nMission Rewards (x5)\nPoint Rewards (x5)
 		Saint Quartz				Main Quest (x6)
 		Golden Fruit				Point Rewards (x10)
 		Crystallized Lore			Main Quest\nMission Reward\nPoint Rewards (x3)
@@ -1134,20 +1367,6 @@ Starry Sanzang Goes to India
 			Increase NP Strength by 15%\nIncrease Buster Card effectiveness by 8%
 		Tricolor Combination	CE			3*
 			Increase Critical Star Gather Rate by 100%\nIncrease Critical Strength by 5%
-	Event Servants
-		Xuanzang Sanzang				Golden Pills +1
-		Li Shuwen						Peach of Immortality +1
-		Lu Bu Fengxian					Steamed Meat Bun +1
-		David							Steamed Meat Bun +1
-		---
-		Euryale							Large Lotus Flower +1
-		Medusa							Large Lotus Flower +1
-		Stheno							Large Lotus Flower +1
-		Mordred							Large Lotus Flower +1
-		Altria Pendragon (Lancer Alter)	Large Lotus Flower +1
-		Arjuna							Large Lotus Flower +1
-		Karna							Large Lotus Flower +1
-		Nightingale						Large Lotus Flower +1
 	Event CEs
 		Go West!!							Gacha						Golden Pills +1
 		True Samadhi Flames					Gacha						Peach of Immortality +1
@@ -1156,6 +1375,22 @@ Starry Sanzang Goes to India
 		Heroic Entry: Three Great Heroes	Free Quest\nShop (x4)\nDrop	Merit Talisman +1
 		Princess of Wind and Clouds			Shop (x4)\nDrop				Merit Ball +20%
 		Nine-Headed Bull Demon King			Challenge Quest (x5)\nDrop	Large Lotus Flower +1
+	-----
+	Event Servants
+		Xuanzang Sanzang				Golden Pills +1
+		Li Shuwen						Peach of Immortality +1
+		Lu Bu Fengxian					Steamed Meat Bun +1
+		David							Steamed Meat Bun +1
+		---
+		Euryale							Large Lotus Flower +1
+			[1]rowspan="8"
+		Medusa
+		Stheno
+		Mordred
+		Altria Pendragon (Lancer Alter)
+		Arjuna
+		Karna
+		Nightingale
 	Notable Items
 		Saint Quartz				Main Quest (x7)
 		Golden Fruit				Free Quest (x8)
@@ -1173,7 +1408,7 @@ Starry Sanzang Goes to India
 	Type: Servant
 	JP: Jun. 30th ~ Jul. 6th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/6M_Downloads_Campaign
-	Half AP: Free Quests
+	Half AP : Free Quests
 	Da Vinci's Workshop : Personal Lesson CE on rotation (3 months)
 	Rate Up
 		Scáthach	Lancer	5*
@@ -1192,7 +1427,7 @@ Starry Sanzang Goes to India
 </div>
 <div id="page-header">
 	<div class="description">&ndash; Overview of major upcoming events based on the JP version &ndash;</div>
-	<div class="details">Full event lists: <a href="http://fate-go.cirnopedia.org/quest_event_us.php#nav">Cirnopedia NA</a> &amp; <a href="http://fate-go.cirnopedia.org/quest_event.php#nav">JP</a>, <a href="http://fategrandorder.wikia.com/wiki/Event_List_(US)">Wikia NA</a> &amp; <a href="http://fategrandorder.wikia.com/wiki/Event_List">JP</a>, <a href="https://grandorder.wiki/Events_(EN)">Grand Order NA</a> &amp; <a href="https://grandorder.wiki/Events_(JP)">JP</a></div>
+	<div class="details">Full event lists: <a href="http://fate-go.cirnopedia.org/quest_event.php#nav">Cirnopedia JP</a> &amp; <a href="http://fate-go.cirnopedia.org/quest_event_us.php#nav">NA</a>, <a href="http://fategrandorder.wikia.com/wiki/Event_List">Wikia JP</a> &amp; <a href="http://fategrandorder.wikia.com/wiki/Event_List_(US)">NA</a>, <a href="https://grandorder.wiki/Events_(JP)">Grand Order JP</a> &amp; <a href="https://grandorder.wiki/Events_(EN)">NA</a></div>
 </div>
 <div id="page-container">
 	<div id="events"></div>
