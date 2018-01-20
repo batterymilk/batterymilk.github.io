@@ -321,7 +321,7 @@
 		
 		self.init = function ()
 		{
-			var eventsText = document.getElementById('events-text').textContent.split("\n");
+			var eventsText = document.getElementById('events-text').innerHTML.split("\n");
 			var displayElem = document.getElementById('events');
 			
 			var eventsObjects = parse_text(eventsText);
@@ -334,7 +334,7 @@
 			/*
 			eventsText / #events-text
 				(event name)
-					Type: Event|Servant|Chapter
+					Type: Event|Summon|Chapter
 					?JP: (date/s)
 					?NA: (date/s)
 					?URL: (url for official news announcement if any or cirno/wiki page if not)
@@ -508,9 +508,9 @@
 		--event-light: #E8F0FF;
 		--event-dark: #C8D0F0;
 		--event-medium: #D8E0F8;
-		--servant-light: #FFFFE8;
-		--servant-dark: #E0E0C8;
-		--servant-medium: #F0F0D8;
+		--summon-light: #FFFFE8;
+		--summon-dark: #E0E0C8;
+		--summon-medium: #F0F0D8;
 		--chapter-light: #FFE8E8;
 		--chapter-dark: #F0C8C8;
 		--chapter-medium: #F8D8D8;
@@ -540,9 +540,9 @@
 		background-color: var(--event-light);
 		border: 1px solid var(--event-dark);
 	}
-	#events .servant {
-		background-color: var(--servant-light);
-		border: 1px solid var(--servant-dark);
+	#events .summon {
+		background-color: var(--summon-light);
+		border: 1px solid var(--summon-dark);
 	}
 	#events .chapter {
 		background-color: var(--chapter-light);
@@ -551,8 +551,8 @@
 	#events .event .titlebar {
 		background: var(--event-dark) linear-gradient(var(--event-light), var(--event-dark) 20%);
 	}
-	#events .servant .titlebar {
-		background: var(--servant-dark) linear-gradient(var(--servant-light), var(--servant-dark) 20%);
+	#events .summon .titlebar {
+		background: var(--summon-dark) linear-gradient(var(--summon-light), var(--summon-dark) 20%);
 	}
 	#events .chapter .titlebar {
 		background: var(--chapter-dark) linear-gradient(var(--chapter-light), var(--chapter-dark) 20%);
@@ -610,10 +610,10 @@
 		border-color: var(--event-dark);
 		background-color: var(--event-light);
 	}
-	#events .servant .topbar,
-	#events .servant .topbar .rule {
-		border-color: var(--servant-dark);
-		background-color: var(--servant-light);
+	#events .summon .topbar,
+	#events .summon .topbar .rule {
+		border-color: var(--summon-dark);
+		background-color: var(--summon-light);
 	}
 	#events .chapter .topbar,
 	#events .chapter .topbar .rule {
@@ -685,14 +685,14 @@
 	#events .event .content td[rowspan] {
 		background-color: var(--event-medium);
 	}
-	#events .servant .content tr.light-stripe {
-		background-color: var(--servant-light);
+	#events .summon .content tr.light-stripe {
+		background-color: var(--summon-light);
 	}
-	#events .servant .content tr.dark-stripe {
-		background-color: var(--servant-dark);
+	#events .summon .content tr.dark-stripe {
+		background-color: var(--summon-dark);
 	}
-	#events .servant .content td[rowspan] {
-		background-color: var(--servant-medium);
+	#events .summon .content td[rowspan] {
+		background-color: var(--summon-medium);
 	}
 	#events .chapter .content tr.light-stripe {
 		background-color: var(--chapter-light);
@@ -755,7 +755,7 @@
 		Note: Oda Nobunaga &amp; ascension materials available in event shop
 
 	The FGO Thanksgiving Special!
-		Type: Servant
+		Type: Summon
 		JP: Dec. 9th ~	16th, 2015
 		NA: Nov. 22nd ~ Dec. 1st, 2017
 		URL: https://webview.fate-go.us/iframe/2017/1120_thanksgiving_cp/
@@ -816,7 +816,7 @@
 			Jing Ke				Assassin	3*
 
 	Singularity Pickup Summon (Daily)
-		Type: Servant
+		Type: Summon
 		NA: Dec. 11th ~ 19th, 2017
 		URL: https://webview.fate-go.us/iframe/2017/1208_singularity_pu/
 		Half AP : Main Quests
@@ -880,7 +880,7 @@
 		Note: All servants and craft essences permanently added to story gacha
 
 	London Pickup 2 Summon
-		Type: Servant
+		Type: Summon
 		NA: Dec. 26th, 2017 ~ Jan. 4th, 2018
 		JP: Jan. 13th ~ 20th, 2016
 		URL: https://webview.fate-go.us/2017/1225_London_pu2/
@@ -891,7 +891,7 @@
 		Note: Available even if you haven't unlocked London
 
 	New Year Pickup Summon (Daily)
-		Type: Servant
+		Type: Summon
 		NA: Dec. 28th, 2017 ~ Jan. 4th, 2018
 		JP: Jan. 1st ~ 13th, 2016
 		URL: https://webview.fate-go.us/iframe/2017/1226_new_year/
@@ -942,7 +942,7 @@
 			Purely Bloom					Point Reward\nShop (x4)\nDrop	Own Attack +100%
 		-----
 		Event Servants
-				   Name               Damage  Reward Points
+				   Name                Attack  Reward Points
 			------------------------------------------------
 			Mysterious Heroine X		+100% 	+50%
 				[1][2]rowspan="2"
@@ -978,7 +978,7 @@
 	*/
 
 2 Million Downloads Campaign
-	Type: Servant
+	Type: Summon
 	NA: Jan. 18th ~ 25th, 2018
 	JP: Feb. 3rd ~ 10th, 2016
 	URL: https://webview.fate-go.us/iframe/2018/0116_200dlcp/
@@ -1091,7 +1091,7 @@ Kara no Kyoukai / The Garden of Order
 	Note: Ryougi Shiki (Saber) is a limited servant
 
 Chaldea Boys Collection
-	Type: Servant
+	Type: Summon
 	JP: Mar. 9th ~ 16th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/Chaldea_Boys_Collection_2016_Event
 	Rate Up
@@ -1206,7 +1206,7 @@ Da Vinci and the Seven Fake Heroic Spirits
 	Note: Jeanne d'Arc (Alter) is a limited servant
 
 Fate/Accel Zero Order Pre-Event Campaign
-	Type: Servant
+	Type: Summon
 	JP: Apr. 21st ~ 27th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/Fate/Accel_Zero_Order_(Pre-Event)
 	Mystic Code : Royal Brand
@@ -1300,7 +1300,7 @@ Fate/Accel Zero Order
 	Note: See details for rate up schedule
 
 E Pluribus Unum Summoning Campaign 2
-	Type: Servant
+	Type: Summon
 	JP: May 11th ~ 18th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/E_Pluribus_Unum_Summoning_Campaign_2
 	Rate Up
@@ -1308,7 +1308,7 @@ E Pluribus Unum Summoning Campaign 2
 	Note: Available even if you haven't unlocked E Pluribus Unum
 
 E Pluribus Unum Summoning Campaign 3
-	Type: Servant
+	Type: Summon
 	JP: May 18th ~ 25th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/E_Pluribus_Unum_Summoning_Campaign_3
 	Rate Up
@@ -1317,7 +1317,7 @@ E Pluribus Unum Summoning Campaign 3
 	Note: Available even if you haven't unlocked E Pluribus Unum
 
 Kintoki Summoning Campaign
-	Type: Servant
+	Type: Summon
 	JP: May 25th ~ Jun. 1st, 2016
 	URL: http://fategrandorder.wikia.com/wiki/Kintoki_Summoning_Campaign
 	Rate Up
@@ -1363,7 +1363,7 @@ Starry Sanzang Goes to India
 	URL: http://fate-go.cirnopedia.org/quest_event_20160615.php#nav
 	Rate Up
 		Xuanzang Sanzang		Caster		5*
-		God Spear Li Shuwen		Lancer		4*
+		Li Shuwen				Lancer		4*
 		David					Archer		3*
 		Lu Bu Fengxian			Berserker	3*
 		---
@@ -1411,7 +1411,7 @@ Starry Sanzang Goes to India
 	Note: Li Shuwen can be summoned even if you haven't cleared E Pluribus Unum
 
 6M Downloads Campaign
-	Type: Servant
+	Type: Summon
 	JP: Jun. 30th ~ Jul. 6th, 2016
 	URL: http://fategrandorder.wikia.com/wiki/6M_Downloads_Campaign
 	Half AP : Free Quests
@@ -1430,10 +1430,768 @@ Starry Sanzang Goes to India
 		Jewel Sword Zelretch	CE	3*
 			Increase NP Gain by 5%\nIncrease NP Gauge by 25% at the start of battle
 	Note: Scáthach is a limited servant
+
+Tenma Otogizoushi, Onigashima
+	Type: Event
+	JP: Jul. 11th ~ 25th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160711.php#nav
+	Event Servants
+		      Name              Attack
+		Minamoto-no-Raikou		+100%
+			[1]rowspan="2"
+		Sakata Kintoki (Rider)
+		---
+		Sakata Kintoki			+80%
+			[1]rowspan="6"
+		Shuten Douji
+		Ibaraki Douji
+		Kiyohime
+		Ushiwakamaru
+		Fuuma Kotarou
+		---
+		Musashibou Benkei		+60%
+			[1]rowspan="10"
+		Amakusa Shirou
+		Emiya
+		Emiya (Assassin)
+		Okita Souji
+		Oda Nobunaga
+		Sasaki Kojirou
+		Tamamo-no-Mae
+		Ryougi Shiki (Saber)
+		Ryougi Shiki (Assassin)
+
+Camelot Chapter Release
+	Type: Chapter
+	JP: Jul. 25th ~ 29th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/Camelot_Chapter_Release
+
+FGO Summer Festival 2016 ~1st Anniversary~
+	Type: Event
+	JP: Jul. 30th ~ Aug. 7th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160730.php#nav
+	/* Half AP : Daily Quests
+	Super/Great Success : Triple rates */
+
+Summer! Sea! Development! FGO 2016 Summer: Chaldea Summer Memory ~White Beach of Solace~
+	Type: Event
+	JP: Aug. 11th ~ 31st, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160811.php#nav
+	Mystic Code : Brilliant Summer
+	Note: Every servant gets a bonus to a particular resource: see <a href="http://fate-go.cirnopedia.org/quest_event_20160811.php#gather">guide</a> for details
+
+Summer! Sea! Development! FGO 2016 Summer: Chaldea Heat Odyssey ~Evolving Civilization~
+	Type: Event
+	JP: Aug. 22nd ~ 31st, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160822.php#nav
+	Note: Every servant gets a bonus to a particular resource: see <a href="http://fate-go.cirnopedia.org/quest_event_20160822.php#gather">guide</a> for details
+
+Camelot Summoning Campaign 2
+	Type: Summon
+	JP: Aug. 31st ~ Sep. 7th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/Camelot_Summoning_Campaign_2
+	/* Half AP : Camelot Main Quests */
+
+Magical Girl Diaries ~Prisma Corps~
+	Type: Event
+	JP: Aug. 8th ~ 21st, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160908.php#nav
+	Event Servants
+		     Name          Attack
+		Mash Kyrielight		+100%
+			[1]rowspan="3"
+		Chloe von Einzbern
+		Illyasviel von Einzbern
+		---
+		Queen Medb			+80%
+			[1]rowspan="4"
+		Medea (Lily)
+		Nursery Rhyme
+		Helena Blavatsky
+	Note: Only Female-trait Servants receive attack bonuses from event limited CEs, as well as Chevalier d'Eon and Astolfo
+
+Class-Specified Summoning Campaign
+	Type: Summon
+	JP: Sep. 21st ~ 28th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/Class-Specified_Summoning_Campaign
+	/* Half AP : Free Quests */
+
+Nero Festival Once More ~2016 Autumn~
+	Type: Event
+	JP: Sep. 28th ~ Oct. 10th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20160928.php#nav
+
+7M Downloads Campaign
+	Type: Summon
+	JP: Oct. 5th ~ 12th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/7M_Downloads_Campaign
+
+Rerun: The Adventure of Singing Pumpkin Castle ~Mad Party 2015~ Lite Version
+	Type: Event
+	JP: Oct. 12th ~ 26th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20161012.php#nav
+
+Halloween Comeback! Mega☆Huge Pumpkin Village ~And Adventure......~
+	Type: Event
+	JP: Oct. 19th ~ Nov. 2nd, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20161019.php#nav
+	Event Servants
+		            Name            Attack
+		Elizabeth Bathory (Brave)	+100%
+			[1]rowspan="1"
+		---
+		Robin Hood					+80%
+			[1]rowspan="5"
+		Ibaraki Douji
+		Nitocris
+		Cleopatra
+		Vlad III (EXTRA)
+
+Round Table Knights Summoning Campaign 
+	Type: Summon
+	JP: Nov. 9th ~ 16th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/Round_Table_Knights_Summoning_Campaign
+
+Hunting Quest 2
+	Type: Event
+	JP: Nov. 9th ~ 16th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20161109.php#nav
+
+Rerun: Almost Weekly Santa Alter
+	Type: Event
+	JP: Nov. 16th ~ 22nd, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20161116.php#nav
+	Event Servants
+		          Name                Magic Stocking
+		Altria Pendragon (Santa Alter)		+4
+			[1]rowspan="1"
+		---
+		Jack the Ripper						+3
+			[1]rowspan="1"
+		---
+		Marie Antoinette					+2
+			[1]rowspan="3"
+		Martha
+		Nursery Rhyme
+		---
+		Gaius Julius Caesar					+1
+			[1]rowspan="6"
+		Robin Hood
+		Jing Ke
+		Darius III
+		David
+		Phantom of the Opera
+
+Amakusa Shirou Summoning Campaign
+	Type: Summon
+	JP: Nov. 22nd ~ Dec. 7th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/Amakusa_Shirou_Summoning_Campaign
+
+The Second Generation is Alter-chan ~2016 Christmas~
+	Type: Event
+	JP: Nov. 28th ~ Dec. 7th, 2016
+	URL: http://fate-go.cirnopedia.org/quest_event_20161128.php#nav
+	Event Servants
+				   Name               Currency Bonus
+		Ishtar							Fruitcake
+			[1]rowspan="3"
+		Jeanne d'Arc Santa Alter Lily
+		Amakusa Shirou
+		---
+		Emiya							Shortcake
+			[1]rowspan="3"
+		Jeanne d'Arc
+		Jeanne d'Arc (Alter)
+		---
+		Mash Kyrielight					Cheesecake
+			[1]rowspan="10"
+		Child Gil
+		Tawara Touta
+		Ushiwakamaru
+		Gilles de Rais (Caster)
+		Fuuma Kotarou
+		Leonidas I
+		Hassan of the Cursed Arm
+		Mata Hari
+		Asterios
+
+Babylonia Chapter Release
+	Type: Chapter
+	JP: Dec. 7th ~ 21st, 2016
+	URL: http://fategrandorder.wikia.com/wiki/Babylonia_Chapter_Release
+
+Babylonia Summoning Campaign 2
+	Type: Summon
+	JP: Dec. 14th ~ 31st, 2016
+	URL: http://fategrandorder.wikia.com/wiki/Babylonia_Summoning_Campaign_2
+
+Solomon Chapter Release
+	Type: Chapter
+	JP: Dec. 22nd ~ 30th, 2016
+	URL: http://fategrandorder.wikia.com/wiki/Salomon_Chapter_Release
+
+Happy New Year 2017 Campaign
+	Type: Event
+	JP: Jan. 1st ~ 11th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170101.php#nav
+
+Rerun: Do Moon Goddesses Dream of Dango?
+	Type: Event
+	JP: Jan. 18th ~ 25th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170118.php#nav
+
+&quot;First Hassan&quot; Summoning Campaign
+	Type: Summon
+	JP: Jan. 11th ~ 25th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/%22The_Old_Man_of_the_Mountain%22_Summoning_Campaign
+	/* Half AP : Training Grounds */
+
+Rerun: Prison Tower's Howling Demon of Vengeance
+	Type: Event
+	JP: Jan. 25 ~ Feb. 8th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170125.php#nav
+
+8M Downloads Campaign
+	Type: Summon
+	JP: Feb. 1st ~ 8th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/8M_Downloads_Campaign
+
+Rerun: Uproar of the Chocolate Ladies ~Valentine 2016~ Expanded Version
+	Type: Event
+	JP: Feb. 8th ~ 22nd, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170208.php#nav
+
+Shinjuku Chapter Release
+	Type: Chapter
+	JP: Feb. 24th ~ Mar. 8th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Shinjuku_Chapter_Release
+
+Shinjuku Summoning Campaign 2
+	Type: Summon
+	JP: Mar. 1st ~ 8th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Shinjuku_Summoning_Campaign_2
+
+Chaldea Boys Collection 2016 Re-Run
+	Type: Summon
+	JP: Mar. 8th ~ 22nd, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Chaldea_Boys_Collection_2016_Re-Run
+
+Chaldea Boys Collection 2017
+	Type: Summon
+	JP: Mar. 8th ~ 22nd, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Chaldea_Boys_Collection_2017
+
+Rerun: Fate/GUDAGUDA Honnoji Lite Version
+	Type: Event
+	JP: Mar. 15th ~ 31st, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170315.php#nav
+	Event Servants
+		     Name        Reward Points
+		Okita Souji			+100%
+			[1]rowspan="1"
+		---
+		Oda Nobunaga		 +60%
+			[1]rowspan="1"
+		---
+		Emiya				 +40%
+			[1]rowspan="1"
+		---
+		Cú Chulainn			 +20%
+			[1]rowspan="5"
+		Medusa
+		Mephistopheles
+		Ushiwakamaru
+		Musashibou Benkei
+
+Class Based Summoning Campaign
+	Type: Summon
+	JP: Mar. 29th ~ Apr. 5th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Class_Based_Summoning_Campaign
+
+Fate/GUDAGUDA Meiji Ishin
+	Type: Event
+	JP: Apr. 5th ~ 19th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170405.php#nav
+	Event Servants
+		   Name             Attack
+		Okita Souji			+100%
+			[1]rowspan="4"
+		Oda Nobunaga
+		Hijikata Toshizou
+		Chacha
+		---
+		Emiya				+80%
+			[1]rowspan="5"
+		Nikola Tesla
+		Thomas Edison
+		Mysterious Heroine X
+		Mysterious Heroine X (Alter)
+		---
+		Helena Blavatsky	+50%
+			[1]rowspan="5"
+		Cu Chulainn
+		Medusa
+		Medea
+		Edward Teach
+
+
+Fate/EXTRA CCC x Fate/Grand Order Collab Event Pre-Launch Campaign!
+	Type: Event
+	JP: Apr. 19th ~ 30th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170419.php#nav
+	Mystic Code : Memories of the Far Side of the Moon
+
+BB-chan's Counterattack / Meeting at the Electronic Sea
+	Type: Event
+	JP: May. 1st ~ 24th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170501.php#nav
+	Event Servants
+		    Name            Class   Sakura Chip
+		Suzuka Gozen		Saber		+2
+			[1][2]rowspan="1"
+		---
+		Meltlilith			Moon Cancer	+2
+			[1][2]rowspan="3"
+		Passionlip
+		Sessyoin Kiara
+		---
+		BB					Alterego	+2
+			[1][2]rowspan="1"
+		---
+		Gawain				Saber		+1
+			[1][2]rowspan="3"
+		Nero Claudius
+		Nero Claudius (Bride)
+		---
+		Emiya				Archer		+1
+			[1][2]rowspan="5"
+		Emiya (Alter)
+		Gilgamesh
+		Tristan
+		Robin Hood
+		---
+		Vlad III (EXTRA)	Lancer		+1
+			[1][2]rowspan="5"
+		Elizabeth Bathory
+		Karna
+		Li Shuwen
+		Cu Chulainn
+		---
+		Francis Drake		Rider		+1
+			[1][2]rowspan="1"
+		---
+		Tamamo-no-Mae		Caster		+1
+			[1][2]rowspan="3"
+		Nursery Rhyme
+		Hans Christian Andersen
+		---
+		Tamamo Cat			Berserker	+1
+			[1][2]rowspan="2"
+		Lu Bu Fengxian
+
+
+9M Downloads Campaign
+	Type: Summon
+	JP: May. 24th ~ Jun. 2nd, 2017
+	URL: http://fategrandorder.wikia.com/wiki/9M_Downloads_Campaign
+
+Hunting Quest 3
+	Type: Event
+	JP: May. 25th ~ 31st, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170524.php#nav
+
+Rerun: Restless Drunk Demon's Capital, Rashoumon Short Version
+	Type: Event
+	JP: May. 31st ~ Jun. 8th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170531.php#nav
+
+RE: Shinjuku Summoning Campaign
+	Type: Summon
+	JP: Jun. 7th ~ 21st, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Main_Quest_1/2_AP_%2B_Shinjuku_Summoning_Campaign
+	/* Half AP : Main Quests */
+
+Rerun: Tenma Otogizoushi, Onigashima Lite Version
+	Type: Event
+	JP: Jun. 14th ~ 28th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170614.php#nav
+	Event Servants
+		      Name              Attack
+		Minamoto-no-Raikou		+100%
+			[1]rowspan="2"
+		Sakata Kintoki (Rider)
+		---
+		Sakata Kintoki			+80%
+			[1]rowspan="6"
+		Shuten Douji
+		Ibaraki Douji
+		Kiyohime
+		Ushiwakamaru
+		Fuuma Kotarou
+		---
+		Musashibou Benkei		+60%
+			[1]rowspan="20"
+		Amakusa Shirou
+		Emiya
+		Emiya (Assassin)
+		Okita Souji
+		Oda Nobunaga
+		Chacha
+		Emiya (Alter)
+		Sasaki Kojirou
+		Tamamo-no-Mae
+		Ryougi Shiki (Saber)
+		Ryougi Shiki (Assassin)
+		Tawara Touta
+		Suzuka Gozen
+		Kiyohime (Lancer)
+		Tamamo-no-Mae (Lancer)
+		Chloe von Einzbern
+		Illyasviel von Einzbern
+		Hijikata Toshizo
+		Miyamoto Musashi
+		
+Agartha Chapter Release
+	Type: Chapter
+	JP: Jun. 29th ~ Jul. 12th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Agartha_Chapter_Release
+
+Agartha Summoning Campaign 2
+	Type: Summon
+	JP: Jul. 5th ~ 19th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Agartha_Summoning_Campaign_2
+
+FGO THE STAGE Performance Commemoration Campaign
+	Type: Summon
+	JP: Jul. 14th ~ 17th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/FGO_THE_STAGE_Performance_Commemoration_Campaign
+
+Rerun: Summer! Sea! Development! FGO 2016 Summer: Chaldea Summer Memory ~White Beach of Solace~ Lite Version
+	Type: Event
+	JP: Jul. 12th ~ 29th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170712.php#nav
+	Event Servants
+		  Class         Item Bonus
+		Rider		Iron
+			[1]rowspan="2"
+		Moon Cancer
+		---
+		Saber		Stone
+			[1]rowspan="3"
+		Assassin
+		Alterego
+		---
+		Lancer		Wood
+			[1]rowspan="2"
+		Avenger
+		---
+		Shielder	Water
+			[1]rowspan="3"
+		Archer
+		Caster
+		---
+		Berserker	Food
+			[1]rowspan="2"
+		Ruler
+
+Rerun: Summer! Sea! Development! FGO 2016 Summer: Chaldea Heat Odyssey ~Evolving Civilization~ Lite Version
+	Type: Event
+	JP: Jul. 20th ~ 29th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170720.php#nav
+	Event Servants
+		  Class         Item Bonus
+		Rider		Ishka Alloy
+			[1]rowspan="2"
+		Avenger
+		---
+		Caster		Eadrom Alloy
+			[1]rowspan="2"
+		Alterego
+		---
+		Archer		Realta Alloy
+			[1]rowspan="2"
+		Moon Cancer
+		---
+		Saber		Oil
+			[1]rowspan="3"
+		Assassin
+		Shielder
+		---
+		Lancer		Cement
+			[1]rowspan="3"
+		Berserker
+		Ruler
+
+FGO Fes. 2017 ~2nd Anniversary~
+	Type: Event
+	JP: Jul. 29th ~ Aug. 9th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170731.php#nav
+
+All The Statesmen! ~Learning with Manga USA Development History~
+	Type: Event
+	JP: Aug. 2nd ~ 16th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170802.php#nav
+
+Dead Heat Summer Race! ~Ishtar Cup of Hope and Dreams 2017~
+	Type: Event
+	JP: Aug. 9th ~ Sep. 1st, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170809.php#nav
+	Event Servants
+		              Name              Class   Junk Parts/<br/>Titan Plate/<br/>Mag Wheel
+		Nero Claudius					Caster		+2
+			[2]rowspan="5"
+		Frankenstein					Saber
+		Ishtar							Rider
+		Nitocris						Assassin
+		Oda Nobunaga					Berserker
+		---
+		Altria Pendragon				Archer		+1
+			[2]rowspan="19"
+		Orion							Archer 
+		Archer of Shinjuku				Archer 
+		Nikola Tesla					Archer 
+		Tamamo-no-Mae					Lancer 
+		Mysterious Heroine X			Assassin 
+		Xuanzang Sanzang				Caster 
+		Caster of the Nightless Castle	Caster 
+		Atalante						Archer 
+		Anne Bonny &amp; Mary Read		Archer 
+		Kiyohime						Lancer 
+		Mordred							Rider 
+		Scathach						Assassin 
+		Thomas Edison					Caster 
+		Marie Antoinette				Caster 
+		Berserker of El Dorado			Berserker 
+		Martha							Ruler 
+		Boudica							Rider 
+		Charles Babbage					Caster 
+
+Death Jail Summer Escape! ~Medb's Great Prison of Sin and Despair 2017~
+	Type: Event
+	JP: Aug. 17th ~ Sep. 1st, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170817.php#nav
+	Event Servants
+		              Name              Class   One Candy Drop/<br/>Instant Noodle/<br/>Connacht Coin
+		Altria Pendragon (Alter)		Rider		+2
+			[2]rowspan="8"
+		Nero Claudius					Caster
+		Frankenstein					Saber
+		Helena Blavatsky				Archer
+		Minamoto no Raikou				Lancer
+		Ishtar							Rider
+		Nitocris						Assassin
+		Oda Nobunaga					Berserker
+		---
+		Altria Pendragon				Archer		+1
+			[2]rowspan="22"
+		Archer of Shinjuku				Archer
+		Nikola Tesla					Archer
+		Enkidu							Lancer
+		Tamamo-no-Mae					Lancer
+		Mysterious Heroine X			Assassin
+		Quetzalcoatl					Rider
+		Queen Medb						Rider
+		Xuanzang Sanzang				Caster
+		Caster of the Nightless Castle	Caster
+		Nightingale						Berserker
+		Anne Bonny &amp; Mary Read		Archer
+		Kiyohime						Lancer
+		Mordred							Rider
+		Carmilla						Assassin
+		Assassin of Shinjuku			Assassin
+		Scathach						Assassin
+		Thomas Edison					Caster
+		Marie Antoinette				Caster
+		Martha							Ruler	
+		Gorgon							Avenger
+		Charles Babbage					Caster
+
+
+Fate/Kaleid Liner PRISMA☆ILLYA Movie: Oath Under Snow
+	Type: Event
+	JP: Aug. 25th ~ Sep. 8th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170825.php#nav
+
+Class-Based Summoning Campaign
+	Type: Summon
+	JP: Aug. 30th ~ Sep. 13th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Class-Based_Summoning_Campaign
+	/* Half AP : Free Quests (3x each), Shinjuku &amp; Agartha Main Quests */
+
+Nero Fest Once More ~2017 Autumn~
+	Type: Event
+	JP: Sep. 6th ~ 20th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170906.php#nav
+
+KYOMAF2017 Exhibit Commemoration Summoning Campaign
+	Type: Summon
+	JP: Sep. 13th ~ 27th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/KYOMAF2017_Exhibit_Commemoration_Summoning_Campaign
+
+10M Downloads Campaign
+	Type: Summon
+	JP: Sep. 20th ~ Oct. 4th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/10M_Downloads_Campaign
+
+Rerun: Halloween Comeback! Mega☆Huge Pumpkin Village ~And Adventure......~ Lite Version
+	Type: Event
+	JP: Sep. 27th ~ Oct. 11th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20170927.php#nav
+	Event Servants
+		            Name            Attack
+		Elizabeth Bathory (Brave)	+100%
+			[1]rowspan="1"
+		---
+		Robin Hood					+80%
+			[1]rowspan="5"
+		Ibaraki Douji
+		Nitocris
+		Cleopatra
+		Vlad III (EXTRA)
+
+FGO THE STAGE Autumn Performance Commemoration Campaign
+	Type: Summon
+	JP: Sep. 29th ~ Oct. 8th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/FGO_THE_STAGE_Autumn_Performance_Commemoration_Campaign
+
+Fate/stay night Heaven's Feel Premiere Commemoration Campaign
+	Type: Summon
+	JP: Oct. 8th ~ Nov. 12th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Fate/stay_night_Heaven%27s_Feel_Premiere_Commemoration_Campaign
+	Mystic Code : A Fragment of 2004
+
+Shimosa Chapter Release
+	Type: Chapter
+	JP: Oct. 14th ~ Nov. 1st, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Shimosa_Chapter_Release
+
+Shimosa Summoning Campaign 2
+	Type: Summon
+	JP: Oct. 20th ~ Nov. 1st, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Shimosa_Summoning_Campaign_2
+
+Halloween Strike! Evil Build Climber / Great Battle at Himeji Castle
+	Type: Event
+	JP: Oct. 25th ~ Nov. 10th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20171025.php#nav
+	Event Servants
+		          Name                    Class      Attack
+		Mecha Eli-chan 					Alterego 	+100%
+			[1][2]rowspan="2"
+		Mecha Eli-chan Mk.II
+		---
+		Osakabe-hime 					Assassin	+100%
+			[1][2]rowspan="1"
+		---
+		Elisabeth Bathory (Brave) 		Saber 		+50%
+			[1][2]rowspan="1"
+		---
+		Elisabeth Bathory 				Lancer 		+50%
+			[1][2]rowspan="3"
+		Tamamo-no-Mae
+		Kiyohime
+		---
+		Elisabeth Bathory (Halloween)	Caster 		+50%
+			[1][2]rowspan="2"
+		Tamamo-no-Mae
+		---
+		Cleopatra 						Assassin	+50%
+			[1][2]rowspan="4"
+		Carmilla
+		Shinjuku Assassin
+		Fuyajo Assassin
+		---
+		El Dorado Berserker 			Berserker 	+50%
+			[1][2]rowspan="3"
+		Tamamo Cat
+		Kiyohime
+
+Rerun: The Second Generation is Alter-chan ~2016 Christmas~ Lite Version
+	Type: Event
+	JP: Nov. 15th ~ 24th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20171115.php#nav
+	Event Servants
+				   Name               Currency Bonus
+		Ishtar							Fruitcake
+			[1]rowspan="3"
+		Jeanne d'Arc Santa Alter Lily
+		Amakusa Shirou
+		---
+		Emiya							Shortcake
+			[1]rowspan="7"
+		Jeanne d'Arc
+		Jeanne d'Arc (Alter)
+		Jack the Ripper
+		Martha
+		Altria Pendragon (Santa Alter)
+		Nursery Rhyme
+		---
+		Mash Kyrielight					Cheesecake
+			[1]rowspan="10"
+		Child Gil
+		Tawara Touta
+		Ushiwakamaru
+		Gilles de Rais (Caster)
+		Fuuma Kotarou
+		Leonidas I
+		Hassan of the Cursed Arm
+		Mata Hari
+		Asterios
+
+11M Downloads Campaign
+	Type: Summon
+	JP: Nov. 22nd ~ 29th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/11M_Downloads_Campaign
+
+Salem Chapter Release
+	Type: Chapter
+	JP: Nov. 29th ~ Dec. 13th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Salem_Chapter_Release
+
+Merry Christmas in the Netherworld
+	Type: Event
+	JP: Dec. 1st ~ 25th, 2017
+	URL: http://fate-go.cirnopedia.org/quest_event_20171215.php#nav
+	Event Servants
+		          Name                 Currency Bonus
+		Ishtar							Snow Baby
+			[1]rowspan="7"
+		Enkidu
+		Jeanne d'Arc Santa Alter Lily
+		Altria Pendragon (Santa Alter)
+		Ushiwakamaru
+		Ereshkigal
+		Altera the Sun (Ta)
+		---
+		Merlin							Corpse Bell
+			[1]rowspan="4"
+		Gilgamesh (Caster)
+		Paracelsus von Hohenheim
+		Mash Kyrielight
+		---
+		Altera							Hollow Candle
+			[1]rowspan="5"
+		Medusa (Lancer)
+		Jaguar Man
+		Musashibou Benkei
+		Leonidas I
+
+Salem Summoning Campaign 2
+	Type: Summon
+	JP: Dec. 6th ~ 20th, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Salem_Summoning_Campaign_2
+
+Main Story Arc 2 Prologue Release Campaign
+	Type: Chapter
+	JP: Dec. 26th ~ 31st, 2017
+	URL: http://fategrandorder.wikia.com/wiki/Main_Story_Arc_2_Prologue_Release_Campaign
 </div>
 <div id="page-header">
 	<div class="description">&ndash; Overview of major upcoming events based on the JP version &ndash;</div>
-	<div class="details">Full event lists: <a href="http://fate-go.cirnopedia.org/quest_event.php#nav">Cirnopedia JP</a> &amp; <a href="http://fate-go.cirnopedia.org/quest_event_us.php#nav">NA</a>, <a href="http://fategrandorder.wikia.com/wiki/Event_List">Wikia JP</a> &amp; <a href="http://fategrandorder.wikia.com/wiki/Event_List_(US)">NA</a>, <a href="https://grandorder.wiki/Events_(JP)">Grand Order JP</a> &amp; <a href="https://grandorder.wiki/Events_(EN)">NA</a></div>
+	<div class="details">
+		Full event lists: <a href="http://fate-go.cirnopedia.org/quest_event.php#nav">Cirnopedia JP</a> &amp; <a href="http://fate-go.cirnopedia.org/quest_event_us.php#nav">NA</a> &diamond; <a href="http://fategrandorder.wikia.com/wiki/Event_List">Wikia JP</a> &amp; <a href="http://fategrandorder.wikia.com/wiki/Event_List_(US)">NA</a> &diamond; <a href="https://grandorder.wiki/Events_(JP)">Grand Order JP</a> &amp; <a href="https://grandorder.wiki/Events_(EN)">NA</a><br/>
+		<a href="http://fate-go.cirnopedia.org/summon.php">Summoning Campaigns</a> &diamond; <a href="https://docs.google.com/spreadsheets/d/1V2iDoN2HjafZ8Ube6Jgi0woIibY-Di3YxLMZdJ6quTA/edit#gid=585071742">Event Items</a> &diamond; <a href="https://kazemai.github.io/fgo-vz/relate_quest.html">Interlude/Strengthening Quest Schedule</a>
+	</div>
 </div>
 <div id="page-container">
 	<div id="events"></div>
