@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<title>FateGO Valentines Countdown Clock</title>
+<script type="text/javascript">
+	var Clock = {};
+	(function () {
+		var self = this;
+		
+		self.init = function ()
+		{
+			pageElems.scrollContainers = {
+				classes : document.getElementById('clock-scroll-classes'),
+				times : document.getElementById('clock-scroll-times')
+			};
+			pageElems.timer = document.getElementById('clock-timer');
+			pageElems.scroll = document.getElementById('clock-scroll');
+			pageElems.activeClass = document.getElementById('active-class');
+			
+			parse_event_dates_to_stamps();
+			generate_class_and_time_elems();
+			compute_scroll_length_and_height();
+			
+			self.update();
+			setInterval(self.update, 15000);
+		}
+		self.update = function ()
+		{
+			update_timer();
+			update_scroll_position();
+			hide_expired_times();
+			update_active_class();
+		}
+		self.classClick = function (event)
+		{
+			if (lastHighlightClass)
+			{
+				var elems = pageElems.scrollContainers.classes.querySelectorAll('.' + lastHighlightClass);
+				remove_class(elems, 'highlight');
+			}
+			
+			var servClass = event.target.textContent.toLowerCase();
+			if (servClass && servClass != lastHighlightClass)
+			{
+				var elems = pageElems.scrollContainers.classes.querySelectorAll('.' + servClass);
+				add_class(elems, 'highlight');
+				lastHighlightClass = servClass;
+			}
+		}
+		
+		var update_timer = function ()
+		{
+			var timerIndex = get_next_time_event_index();
+			if (timerIndex === false)
+				pageElems.timer.innerHTML = 'end';
+			else
+			{
+				var countdownTime = timeEvents[timerIndex].timestamp;
+				var duration = (countdownTime - get_time()) / 1000;
+				var hours = Math.floor(duration / 3600);
+				var minutes = Math.ceil(duration % 3600 / 60);
+				if (hours < 10)
+					hours = '0' + hours;
+				if (minutes < 10)
+					minutes = '0' + minutes;
+				pageElems.timer.innerHTML = '-' + hours + ':' + minutes;
+			}
+		}
+		var update_scroll_position = function ()
+		{
+			var startTime = timeEvents[0].timestamp;
+			var endTime = timeEvents[timeEvents.length - 1].timestamp;
+			var now = get_time();
+			var progress = (now - startTime) / (endTime - startTime);
+			if (progress < 0)
+				progress = 0;
+			else if (progress > 1)
+				progress = 1;
+			var scrollPosition = Math.round(progress * scrollLength * 1000) / 1000;
+			
+			var styleTop = '-' + scrollPosition + 'px';
+			var styleHeight = (scrollHeight - scrollPosition) + 'px';
+			if (pageElems.scroll.style.top != styleTop)
+				pageElems.scroll.style.top = styleTop
+			if (pageElems.scroll.style.height != styleHeight)
+				pageElems.scroll.style.height = styleHeight;
+		}
+		var hide_expired_times = function ()
+		{
+			for (var _i = 0, _len_i = timeEvents.length; _i < _len_i; _i++)
+			{
+				var timeEvent = timeEvents[_i];
+				var timeElem = pageElems.timeContainers[_i];
+				var now = get_time();
+				if (timeEvent.timestamp < now && _i != _len_i - 1 && timeElem.style.visibility != 'hidden')
+					timeElem.style.visibility = 'hidden';
+			}
+		}
+		var update_active_class = function ()
+		{
+			var activeIndex = get_active_time_event_index();
+			if (activeIndex !== false && timeEvents[activeIndex].hasOwnProperty('servClass'))
+				var servClass = timeEvents[activeIndex].servClass;
+			else
+				var servClass = '';
+			
+			if (servClass != lastActiveClass)
+			{
+				pageElems.activeClass.innerHTML = servClass;
+				lastActiveClass = servClass;
+			} 
+		}
+		var compute_scroll_length_and_height = function ()
+		{
+			var firstTimeContainer = pageElems.timeContainers[0];
+			var lastTimeContainer = pageElems.timeContainers[pageElems.timeContainers.length - 1];
+			scrollLength = lastTimeContainer.offsetTop - firstTimeContainer.offsetTop;
+			
+			var scrollStyle = window.getComputedStyle(pageElems.scroll);
+			scrollHeight = parseInt(scrollStyle.height);
+		}
+		var generate_class_and_time_elems = function ()
+		{
+			var classMarkup = '';
+			var timeMarkup = '';
+			for (var _i = 0, _len_i = timeEvents.length; _i < _len_i; _i++)
+			{
+				var timeEvent = timeEvents[_i];
+				if (timeEvent.servClass)
+					classMarkup += '<div><span class="clickable ' + timeEvent.servClass.toLowerCase() + '">' + timeEvent.servClass + '</span></div>';
+				var stamp = get_time(timeEvent.dateString);
+				timeMarkup += '<div>' +
+					'<div class="notch"></div>' +
+					'<div class="time-container" title="' + format_time(stamp, true) + '"><div class="time">' + format_time(stamp) + '</div></div>' +
+					'</div>';
+			}
+			pageElems.scrollContainers.classes.innerHTML = classMarkup;
+			pageElems.scrollContainers.times.innerHTML = timeMarkup;
+			
+			pageElems.timeContainers = pageElems.scrollContainers.times.childNodes;
+			
+			var classTexts = pageElems.scrollContainers.classes.querySelectorAll('.clickable');
+			for (var _i = 0, _len_i = classTexts.length; _i < _len_i; _i++)
+			{
+				var classElem = classTexts[_i];
+				classElem.addEventListener('click', self.classClick);
+			}
+		}
+		var get_active_time_event_index = function ()
+		{
+			var now = get_time();
+			if (now < timeEvents[0].timestamp)
+				return false;
+			for (var _i = 0, _len_i = timeEvents.length; _i < _len_i; _i++)
+			{
+				var timeEvent = timeEvents[_i];
+				if (timeEvent.timestamp > now)
+					return _i - 1;
+			}
+			return false;
+		}
+		var get_next_time_event_index = function ()
+		{
+			var now = get_time();
+			if (now < timeEvents[0].timestamp)
+				return 0;
+			for (var _i = 0, _len_i = timeEvents.length; _i < _len_i; _i++)
+			{
+				var timeEvent = timeEvents[_i];
+				if (timeEvent.timestamp > now)
+					return _i;
+			}
+			return false;
+		}
+		var parse_event_dates_to_stamps = function ()
+		{
+			for (var _i = 0, _len_i = timeEvents.length; _i < _len_i; _i++)
+			{
+				var timeEvent = timeEvents[_i];
+				var stamp = get_time(timeEvent.dateString);
+				timeEvent.timestamp = stamp;
+			}
+		}
+		var format_time = function (timestamp, utc)
+		{
+			var date = new Date(timestamp);
+			var str = '';
+			
+			var day = (utc ? date.getUTCDay() : date.getDay());
+			switch (day)
+			{
+				case 0: str += 'Sun'; break;
+				case 1: str += 'Mon'; break;
+				case 2: str += 'Tue'; break;
+				case 3: str += 'Wed'; break;
+				case 4: str += 'Thu'; break;
+				case 5: str += 'Fri'; break;
+				case 6: str += 'Sat'; break;
+			}
+			str += '. ';
+			
+			if (utc)
+			{
+				var month = date.getUTCMonth() + 1;
+				var dayOfMonth = date.getUTCDate();
+				str += month + '/' + dayOfMonth + ' @ ';
+				var hours = date.getUTCHours();
+				if (hours < 10)
+					hours = '0' + hours;
+				var meridian = '';
+			}
+			else
+			{
+				var hours = date.getHours();
+				var meridian;
+				if (hours == 0)
+				{
+					hours = 12;
+					meridian = 'am';
+				}
+				else if (hours < 12)
+					meridian = 'am';
+				else if (hours >= 12)
+					meridian = 'pm';
+				if (hours > 12)
+					hours -= 12;
+			}
+			var minutes = (utc ? date.getUTCMinutes() : date.getMinutes());
+			if (minutes < 10)
+				minutes = '0' + minutes;
+			str += hours + ':' + minutes + meridian;
+			if (utc)
+				str += ' UTC';
+			return str;
+		}
+		var get_time = function (dateString)
+		{
+			if (dateString)
+			{
+				var date = new Date(dateString);
+				return date.getTime();
+			}
+			else
+				return Date.now();
+		}
+		
+		var add_class = function (elems, classNames)
+		{
+			if (elems instanceof Element)
+				elems = [elems];
+			if (typeof classNames == 'string')
+				classNames = [classNames];
+			for (var _i = elems.length - 1; _i >= 0; _i--)
+			{
+				var elem = elems[_i];
+				for (var _j = 0, _len_j = classNames.length; _j < _len_j; _j++)
+				{
+					var className = classNames[_j];
+					if (!elem.classList.contains(className))
+						elem.classList.add(className);
+				}
+			}
+		}
+		var remove_class = function (elems, classNames)
+		{
+			if (elems instanceof Element)
+				elems = [elems];
+			if (typeof classNames == 'string')
+				classNames = [classNames];
+			for (var _i = elems.length - 1; _i >= 0; _i--)
+			{
+				var elem = elems[_i];
+				for (var _j = 0, _len_j = classNames.length; _j < _len_j; _j++)
+				{
+					var className = classNames[_j];
+					if (elem.classList.contains(className))
+						elem.classList.remove(className);
+				}
+			}
+		}
+		
+		var timeEvents = [ //4 Sabers, 2 Lancers, 2 Archers, 3 Riders, 2 Casters, 2 Assassins, 1 Berserker
+			{ dateString : 'Fri, 26 Jan 2018 00:00:00 GMT', servClass : 'Rider' },
+			{ dateString : 'Fri, 26 Jan 2018 12:00:00 GMT', servClass : 'Assassin' },
+			{ dateString : 'Sat, 27 Jan 2018 00:00:00 GMT', servClass : 'Lancer' },
+			{ dateString : 'Sat, 27 Jan 2018 12:00:00 GMT', servClass : 'Archer' },
+			{ dateString : 'Sun, 28 Jan 2018 00:00:00 GMT', servClass : 'Rider' },
+			{ dateString : 'Sun, 28 Jan 2018 12:00:00 GMT', servClass : 'Saber' },
+			{ dateString : 'Mon, 29 Jan 2018 00:00:00 GMT', servClass : 'Rider' },
+			{ dateString : 'Mon, 29 Jan 2018 12:00:00 GMT', servClass : 'Saber' },
+			{ dateString : 'Tue, 30 Jan 2018 00:00:00 GMT', servClass : 'Caster' },
+			{ dateString : 'Tue, 30 Jan 2018 12:00:00 GMT', servClass : 'Berserker' },
+			{ dateString : 'Wed, 31 Jan 2018 00:00:00 GMT', servClass : 'Saber' },
+			{ dateString : 'Wed, 31 Jan 2018 12:00:00 GMT', servClass : 'Archer' },
+			{ dateString : 'Thu, 01 Feb 2018 00:00:00 GMT', servClass : 'Assassin' },
+			{ dateString : 'Thu, 01 Feb 2018 12:00:00 GMT', servClass : 'Caster' },
+			{ dateString : 'Fri, 02 Feb 2018 00:00:00 GMT', servClass : 'Lancer' },
+			{ dateString : 'Fri, 02 Feb 2018 12:00:00 GMT', servClass : 'Saber' },
+			{ dateString : 'Fri, 02 Feb 2018 23:59:59 GMT' }
+		];
+		var pageElems = {};
+		var scrollLength;
+		var scrollHeight;
+		var lastHighlightClass;
+		var lastTimerEventIndex;
+		var lastActiveClass;
+	}).call(Clock);
+	
+	document.addEventListener('DOMContentLoaded', Clock.init);
+</script>
+<style type="text/css">
+	body {
+		background-color: white;
+		color: black;
+		text-align: center;
+		font-size: 12pt;
+		font-family: sans-serif;
+	}
+	#page-container {
+		display: inline-block;
+	}
+	#page-header {
+		margin-bottom: 16px;
+	}
+	#page-header .details {
+		font-size: 10pt;
+	}
+	#page-footer {
+		margin-top: 24px;
+		font-size: 10pt;
+	}
+	#page-footer > div {
+		margin-top: 4px;
+	}
+	#active-class {
+		height: 1.2em;
+		margin-bottom: 8px;
+		font-size: 20pt;
+	}
+	#clock-container {
+		position: relative;
+		overflow: hidden;
+		padding-left: 98px;
+	}
+	#clock-timer-container {
+		z-index: 10;
+		position: absolute;
+		top: 32px;
+		left: 0;
+		display: flex;
+		flex-direction: row;
+	}
+	#clock-timer {
+		display: flex;
+		width: 80px;
+		height: 40px;
+		border: 2px solid rgba(255, 0, 0, 0.75);
+		justify-content: center;
+		align-items: center;
+		font-size: 16pt;
+	}
+	#clock-timer-container .notch {
+		width: 0;
+		height: 6px;
+		margin-top: 9px;
+		border-top: 10px solid transparent;
+		border-bottom: 10px solid transparent;
+		border-left: 16px solid red;
+	}
+	#clock-marker {
+		position: absolute;
+		top: 51px;
+		border-top: 6px solid rgba(255, 0, 0, 0.75);
+		width: 124px;
+	}
+	#clock-scroll {
+		position: relative;
+		top: 0px;
+		display: flex;
+		flex-direction: row;
+		justify-content: center;
+	}
+	#clock-scroll-classes {
+		margin-top: 53px;
+		border-width: 2px 0 0 0;
+		border-style: solid;
+		border-color: gray;
+	}
+	#clock-scroll-classes > div {
+		display: flex;
+		height: 60px;
+		width: 120px;
+		border-width: 0 2px 2px 2px;
+		border-style: solid;
+		border-color: gray;
+		justify-content: center;
+		align-items: center;
+	}
+	#clock-scroll-classes .clickable {
+		cursor: pointer;
+	}
+	#clock-scroll-classes .highlight {
+		background-color: #80FF80;
+	}
+	#clock-scroll-times {
+		margin-top: 34px;
+	}
+	#clock-scroll-times > div {
+		display: flex;
+		margin-bottom: 20px;
+		flex-direction: row;
+	}
+	#clock-scroll-times .notch {
+		width: 0;
+		height: 0;
+		margin-top: 4px;
+		border-top: 16px solid transparent;
+		border-right: 16px solid blue;
+		border-bottom: 16px solid transparent;
+	}
+	#clock-scroll-times .time-container {
+		display: flex;
+		height: 40px;
+		width: 100px;
+		border: 1px solid blue;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+	#clock-scroll-times .time {
+		font-size: 10pt;
+		cursor: help;
+	}
+</style>
+</head>
+<body>
+<div id="page-header">
+	<div class="description">&ndash; Counts down time remaining until next class spawn rate boost in Chocolate Lady's Commotion 2018 &ndash;</div>
+</div>
+<div id="page-container">
+	<div id="active-class"></div>
+	<div id="clock-container">
+		<div id="clock-timer-container">
+			<div id="clock-timer"></div>
+			<div class="notch"></div>
+		</div>
+		<div id="clock-marker"></div>
+		<div id="clock-scroll">
+			<div id="clock-scroll-classes"></div>
+			<div id="clock-scroll-times"></div>
+		</div>
+	</div>
+</div>
+<div id="page-footer">
+	<div class="credit">Fate/Grand Order &copy; TYPE-MOON / FGO PROJECT | Webpage &copy; batterymilk | All logos and trademarks are property of their respective owners.</div>
+	<div class="links">&hyphen; <a href=".">Index</a> &hyphen;</div>
+</div>
+</body>
+</html>
