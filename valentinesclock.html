@@ -47,6 +47,8 @@
 				add_class(elems, 'highlight');
 				lastHighlightClass = servClass;
 			}
+			else
+				lastHighlightClass = '';
 		}
 		
 		var update_timer = function ()
@@ -399,6 +401,10 @@
 	}
 	#clock-scroll-classes .clickable {
 		cursor: pointer;
+		-moz-user-select: none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
 	}
 	#clock-scroll-classes .highlight {
 		background-color: #80FF80;
