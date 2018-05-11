@@ -15,8 +15,8 @@
 				this.topbarInfo = [];
 				this.content = [[]];
 				this.footerNotes = [];
-				this.currentSubsectionBlock = 0;
-				this.currentSubsection;
+				this.currentSectionBlock = 0;
+				this.currentSection;
 				this.currentTable;
 			};
 			
@@ -65,8 +65,8 @@
 					markup += '<div class="content">';
 					for (var _i = 0, _len_i = this.content.length; _i < _len_i; _i++)
 					{
-						var subsectionBlock = this.content[_i];
-						markup += this.generate_subsection_block_markup(subsectionBlock);
+						var sectionBlock = this.content[_i];
+						markup += this.generate_section_block_markup(sectionBlock);
 					}
 					markup += '</div>';
 					
@@ -77,46 +77,76 @@
 					markup += '</div>';
 					return markup;
 				},
+				addSection : function (heading)
+				{
+					var newSection = {
+						heading : heading,
+						tables : [],
+						subsections : []
+					};
+					this.content[this.currentSectionBlock].push(newSection);
+					this.currentSection = newSection;
+					this.currentSubsection = false;
+				},
 				addSubsection : function (heading)
 				{
 					var newSubsection = {
 						heading : heading,
 						tables : []
 					};
-					this.content[this.currentSubsectionBlock].push(newSubsection);
+					this.currentSection.subsections.push(newSubsection);
 					this.currentSubsection = newSubsection;
 				},
-				startNewSubsectionBlock : function ()
+				startNewSectionBlock : function ()
 				{
 					this.content.push([]);
-					this.currentSubsectionBlock++;
-					this.currentSubsection = undefined;
+					this.currentSectionBlock++;
+					this.currentSection = undefined;
 				},
 				addTable : function ()
 				{
-					if (this.currentSubsection)
+					if (this.currentSection)
 					{
 						var newTable = new Table();
-						this.currentSubsection.tables.push(newTable);
 						this.currentTable = newTable;
+						if (this.currentSubsection)
+							this.currentSubsection.tables.push(newTable);
+						else
+							this.currentSection.tables.push(newTable);
 					}
 				},
 				
-				generate_subsection_block_markup : function (subsectionBlock)
+				generate_section_block_markup : function (sectionBlock)
 				{
-					var markup = '<div class="subsection-block">';
-					for (var _i = 0, _len_i = subsectionBlock.length; _i < _len_i; _i++)
+					var markup = '<div class="section-block">';
+					for (var _i = 0, _len_i = sectionBlock.length; _i < _len_i; _i++)
 					{
-						var subsection = subsectionBlock[_i];
+						var section = sectionBlock[_i];
 						
-						markup += '<div class="subsection">' +
-							'<div class="head">' + subsection.heading + '</div>';
+						markup += '<div class="section">' +
+							'<div class="head">' + section.heading + '</div>';
 						
-						for (var _j = 0, _len_j = subsection.tables.length; _j < _len_j; _j++)
+						for (var _j = 0, _len_j = section.tables.length; _j < _len_j; _j++)
 						{
-							var table = subsection.tables[_j];
+							var table = section.tables[_j];
 							markup += table.generateMarkup();
 						}
+						
+						for (var _j = 0, _len_j = section.subsections.length; _j < _len_j; _j++)
+						{
+							var subsection = section.subsections[_j];
+							markup += '<div class="subsection">' +
+								'<div class="head">' + subsection.heading + '</div>';
+
+							for (var _k = 0, _len_k = subsection.tables.length; _k < _len_k; _k++)
+							{
+								var table = subsection.tables[_k];
+								markup += table.generateMarkup(true);
+							}
+							
+							markup += '</div>';
+						}
+						
 						markup += '</div>';
 					}
 					markup += '</div>';
@@ -132,10 +162,14 @@
 			?url
 			?urlGuide
 			topbarInfo : [*(str)]
-			content : [				//subsectionBlocks
-				[ 					//subsections
+			content : [				//sectionBlocks
+				[ 					//sections
 					heading : (str),
-					tables : [*(Table)]
+					tables : [*(Table)],
+					subsections : [*{
+						heading : (str),
+						tables : [*(Table)]
+					}]
 				]
 			],
 			footerNotes : [*(str)]
@@ -191,7 +225,7 @@
 						}
 					}
 				},
-				generateMarkup : function ()
+				generateMarkup : function (subsection)
 				{
 					for (var _i = 0, _len_i = this.rows.length; _i < _len_i; _i++)
 					{
@@ -200,8 +234,11 @@
 							this.colCount = row.cells.length;
 					}
 					
-					var markup = '<table>' +
-						'<thead>';
+					if (subsection)
+						var markup = '<table style="display: none;">';
+					else
+						var markup = '<table>';
+					markup += '<thead>';
 					
 					var headClosed = false;
 					var stripeToggle = false;
@@ -321,15 +358,28 @@
 		
 		self.init = function ()
 		{
-			var eventsText = document.getElementById('events-text').innerHTML.split("\n");
-			var displayElem = document.getElementById('events');
+			displayElem = document.getElementById('events');
+			eventsText = document.getElementById('events-text').innerHTML.split("\n");
 			
-			var eventsObjects = parse_text(eventsText);
-			var eventsMarkup = generate_markup(eventsObjects);
+			parse_text();
+			generate_markup();
 			displayElem.innerHTML = eventsMarkup;
+			bind_subsection_toggle_handlers();
+		}
+		self.toggleSubsection = function (event)
+		{
+			var subsection = event.target.parentNode;
+			var tables = subsection.querySelectorAll('table');
+			for (var _i = tables.length - 1; _i >= 0; _i--)
+			{
+				if (tables[_i].style.display == 'none')
+					tables[_i].style.display = 'table';
+				else
+					tables[_i].style.display = 'none';
+			}
 		}
 		
-		var parse_text = function (eventsText)
+		var parse_text = function ()
 		{
 			/*
 			eventsText / #events-text
@@ -340,7 +390,7 @@
 					?URL: (url for official news announcement if any or cirno/wiki page if not)
 					?URL-Guide: (url for cirno/wiki guide, if primary URL goes to news announcement but guide still has useful info)
 					*(topbar info) - each value gets own separator-delimited block beneath title bar; \n expands to newline, bypassing separator generation
-					*(subsection heading)
+					*(section heading)
 						(table rows) - can be any of the following:
 							tab-separated values: each becomes own cell in new row
 								any value of the format (digit)* has asterisk stripped and is given class 'rarity' (appends star character)
@@ -351,14 +401,13 @@
 							extra indent followed by one or more attrib="value" or [index]attrib="value" pairs:
 								becomes attribute/s on preceding row or precededing row's indicated cell (0-index)
 							extra indent followed by any plain text: becomes preceding row's title text
-					line beginning with ----- (5 dashes) : starts new subsection block, grouping subsections so they collapse together
+							line beginning with === : begins new subsection; heading should follow on next line, and then a new table (with extra indent)
+					line beginning with ----- (5 dashes) : starts new section block, grouping sections so they collapse together
 					*Note: (footer notes)
 			Commented lines, such as this description, are ignored
 			*/
 			
-			var eventsObjects = [];
-			var lastDepth = 0;
-			var currentEvent = undefined;
+			var eventsTextObj = [];
 			var inComment = false;
 			for (var _i = 0, _len_i = eventsText.length; _i < _len_i; _i++)
 			{
@@ -377,85 +426,109 @@
 					continue;
 				}
 				
-				var tabDepth = line.match(/^\t*/)[0].length;
-				line = line.match(/^\t*(.+?)\s*$/)[1];
+				var depth = line.match(/^\t*/)[0].length;
+				var text = line.match(/^\t*(.+?)\s*$/)[1];
+				eventsTextObj.push({ text : text, depth : depth });
+			}
+			
+			eventsObjects = [];
+			var lastLine = false;
+			var nextLine = false;
+			var sectionDepth = false;
+			var currentEvent = undefined;
+			for (var _i = 0, _len_i = eventsTextObj.length; _i < _len_i; _i++)
+			{
+				var line = eventsTextObj[_i];
+				lastLine = (_i > 0 ? eventsTextObj[_i - 1] : false);
+				nextLine = (_i < _len_i - 1 ? eventsTextObj[_i + 1] : false);
 				
-				if (tabDepth == 0)
+				if (line.depth == 0)
 				{
-					var eventName = line;
+					var eventName = line.text;
 					var newEvent = new Event(eventName);
 					eventsObjects.push(newEvent);
 					currentEvent = newEvent;
 				}
-				else if (tabDepth == 1)
+				else if (line.depth == 1)
 				{
-					if (line.indexOf('Type: ') == 0)
-						currentEvent.type = line.substr(6);
-					else if (line.indexOf('JP: ') == 0)
-						currentEvent.jp = line.substr(4);
-					else if (line.indexOf('NA: ') == 0)
-						currentEvent.na = line.substr(4);
-					else if (line.indexOf('URL: ') == 0)
-						currentEvent.url = line.substr(5);
-					else if (line.indexOf('URL-Guide: ') == 0)
-						currentEvent.urlGuide = line.substr(11);
-					else if (line.indexOf('Note: ') == 0)
-						currentEvent.footerNotes.push(line.substr(6));
-					else if (line.indexOf('-----') == 0)
-						currentEvent.startNewSubsectionBlock();
+					var value;
+					if (value = match_declaration_string(line.text, 'Type:'))
+						currentEvent.type = value;
+					else if (value = match_declaration_string(line.text, 'JP:'))
+						currentEvent.jp = value;
+					else if (value = match_declaration_string(line.text, 'NA:'))
+						currentEvent.na = value;
+					else if (value = match_declaration_string(line.text, 'URL:'))
+						currentEvent.url = value;
+					else if (value = match_declaration_string(line.text, 'URL-Guide:'))
+						currentEvent.urlGuide = value;
+					else if (value = match_declaration_string(line.text, 'Note:'))
+						currentEvent.footerNotes.push(value);
+					else if (line.text.indexOf('-----') == 0)
+						currentEvent.startNewSectionBlock();
 					else
 					{
-						var nextLine = eventsText[_i + 1];
-						if (nextLine && nextLine.match(/^\t{2,}/))
+						if (nextLine && nextLine.depth >= line.depth + 1)
 						{
-							var subsectionHeading = line;
-							currentEvent.addSubsection(subsectionHeading);
+							var sectionHeading = line.text;
+							currentEvent.addSection(sectionHeading);
+							currentEvent.addTable();
+							sectionDepth = line.depth;
 						}
 						else
-							currentEvent.topbarInfo.push(line);
+							currentEvent.topbarInfo.push(line.text);
 					}
 				}
-				else if (tabDepth >= 2)
+				else if (line.depth >= 2)
 				{
-					if (lastDepth == 1)
-						currentEvent.addTable();
-					
-					if (line.indexOf('  ') == 0) //two spaces
+					if (line.text.indexOf('  ') == 0) //two spaces
 					{
-						var values = line.trim().split(/\s{2,}/);
+						var values = line.text.trim().split(/\s{2,}/);
+						if (!currentEvent.currentTable)
+							console.log(_i, line, nextLine);
 						currentEvent.currentTable.addHeaderRow(values);
 					}
-					else if (line.indexOf('---') == 0)
+					else if (line.text.indexOf('---') == 0)
 					{
 						currentEvent.currentTable.addSeparatorRow();
 					}
-					else if (tabDepth == 3)
+					else if (line.text.indexOf('===') == 0 && nextLine)
 					{
-						if (line.match(/[^\s=]+="[^"]+"/)) //matches attrib="value"
-							var attribs = parse_attributes_string(line);
+						currentEvent.addSubsection(nextLine.text);
+						currentEvent.addTable();
+						sectionDepth = line.depth;
+						_i++;
+					}
+					else if (line.depth == sectionDepth + 2)
+					{
+						if (line.text.match(/[^\s=]+="[^"]+"/)) //matches attrib="value"
+							var attribs = parse_attributes_string(line.text);
 						else
-							var attribs = parse_attributes_string('title="' + line.replace(/\\n/g, "\n") + '"');
+							var attribs = parse_attributes_string('title="' + line.text.replace(/\\n/g, "\n") + '"');
 						currentEvent.currentTable.addCurrentRowAttributes(attribs);
 					}
 					else
 					{
-						var values = line.replace(/\\n/g, '<br/>').split(/\t+/);
+						var values = line.text.replace(/\\n/g, '<br/>').split(/\t+/);
 						currentEvent.currentTable.addDataRow(values);
 					}
 				}
-				lastDepth = tabDepth;
 			}
-			return eventsObjects;
 		}
-		var generate_markup = function (eventsObjects)
+		var generate_markup = function ()
 		{
-			var markup = '';
+			eventsMarkup = '';
 			for (var _i = 0, _len_i = eventsObjects.length; _i < _len_i; _i++)
 			{
 				var eventObject = eventsObjects[_i];
-				markup += eventObject.generateMarkup();
+				eventsMarkup += eventObject.generateMarkup();
 			}
-			return markup;
+		}
+		var bind_subsection_toggle_handlers = function ()
+		{
+			var subsectionHeads = document.querySelectorAll('.subsection > .head');
+			for (var _i = subsectionHeads.length - 1; _i >= 0; _i--)
+				subsectionHeads[_i].addEventListener('click', self.toggleSubsection);
 		}
 		var parse_attributes_string = function (str)
 		{
@@ -497,6 +570,17 @@
 			}
 			return str;
 		}
+		var match_declaration_string = function (str, substr)
+		{
+			if (str.indexOf(substr) == 0)
+				return str.substr(substr.length).trim();
+			return false;
+		}
+		
+		var displayElem;
+		var eventsText;
+		var eventsObjects;
+		var eventsMarkup;
 	}).call(EventsParser);
 	
 	document.addEventListener('DOMContentLoaded', function () {
@@ -526,13 +610,26 @@
 		color: black;
 		text-decoration: underline solid #808080;
 	}
+	#page-container {
+		display: inline-block;
+		text-align: left;
+	}
+	#page-header {
+		margin-bottom: 16px;
+	}
+	#page-header .details {
+		font-size: 10pt;
+	}
+	#page-footer {
+		margin-top: 24px;
+		font-size: 10pt;
+	}
+	#page-footer > div {
+		margin-top: 4px;
+	}
 	#events-text {
 		display: none;
 		white-space: pre;
-		text-align: left;
-	}
-	#page-container {
-		display: inline-block;
 		text-align: left;
 	}
 	#events > div {
@@ -630,19 +727,8 @@
 		justify-content: center;
 		text-align: center;
 	}
-	#events .head {
-		margin-bottom: 4px;
-		font-weight: bold;
-	}
-	#events .subsection-block {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: center;
-	}
-	#events .subsection {
-		margin: 0 4px 8px 4px;
-	}
 	#events .content table {
+		width: 100%;
 		border-width: 1px;
 		border-style: solid;
 		border-color: gray;
@@ -679,6 +765,34 @@
 	#events .content td[rowspan] {
 		text-align: center;
 	}
+	#events .section-block {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	#events .section {
+		margin: 0 4px 8px 4px;
+	}
+	#events .section > .head {
+		margin-bottom: 4px;
+		font-weight: bold;
+	}
+	#events .subsection {
+		margin-top: 4px;
+		border: 1px solid gray;
+	}
+	#events .subsection .head {
+		padding-left: 1em;
+		text-align: left;
+		cursor: pointer;
+		-moz-user-select: none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+		user-select: none;
+	}
+	#events .subsection table {
+		border-width: 0;
+	}
 	#events .event .content tr.light-stripe {
 		background-color: var(--event-light);
 	}
@@ -710,19 +824,6 @@
 		margin: 0 4px 4px 4px;
 		text-align: center;
 		font-style: italic;
-	}
-	#page-header {
-		margin-bottom: 16px;
-	}
-	#page-header .details {
-		font-size: 10pt;
-	}
-	#page-footer {
-		margin-top: 24px;
-		font-size: 10pt;
-	}
-	#page-footer > div {
-		margin-top: 4px;
 	}
 </style>
 </head>
@@ -873,11 +974,11 @@
 			---
 			500-Year Obsession	CE			5*
 				Apply NP Seal (2 turns) &amp; Curse (1000 Damage, 10 turns) to enemy killer when you are defeated
-			Necromancy				CE			4*
+			Necromancy			CE			4*
 				Chance to trigger Guts (restore 500 HP) when your HP reaches 0 
-			Awakened Will	CE			4*
+			Awakened Will		CE			4*
 				Chance to increase NP Gauge by 12% each turn\nLose 500 HP each turn [Demerit]
-			Clock Tower				CE			3*
+			Clock Tower			CE			3*
 				Increase your NP Gauge by 2% each turn
 		Note: Available even if you haven't unlocked London
 		Note: All servants and craft essences permanently added to story gacha
@@ -1225,7 +1326,7 @@
 			Beast of Billows			CE			3*
 				Increase NP Strength by 15% when equipped to a [Lancer] class
 		Note: All servants and craft essences permanently added to story gacha
-
+	
 	E Pluribus Unum Summoning Campaign 2
 		Type: Summon
 		NA: Mar. 22nd ~ Apr. 5th, 2018
@@ -1298,7 +1399,7 @@
 			War Horse's Small Horn		Shop (x20)\nDrop
 			Tearstone of Blood			Shop (x20)\nDrop
 			Black Tallow				Shop (x20)\nDrop
-			Mana Prism					Daily Quests (x1,000)
+			Mana Prism					Shop (x500)\nDaily Quests (x500)
 		Note: Jeanne d'Arc (Alter) is a limited servant
 
 	Fate/Accel Zero Order Advance Campaign
@@ -1431,17 +1532,49 @@ The Demonic Capital: Rashomon
 		---
 		Wandering Tales of Shanaou	Shop (x4)\nPoint Reward\nDrop	Own Attack +200%
 		Golden Catches a Carp		Point Reward (x6)\nDrop			Party Attack +100%
-	Notable Items
-		Summon Ticket				Main Quest\nMission Rewards (x5)\nPoint Rewards (x5)
-		Saint Quartz				Main Quest (x6)
-		Golden Fruit				Point Rewards (x10)
-		Crystallized Lore			Main Quest\nMission Reward\nPoint Rewards (x3)
-		Claw of Chaos				Mission Reward (x5)\nPoint Rewards (x20)
-		Heart of the Foreign God	Shop (x10)\nMission Reward (x5)
-		Dragon's Reverse Scale		Mission Reward (x5)\nPoint Rewards (x20)
-		Spirit Root					Point Rewards (x10)
-		Tearstone of Blood			Shop (x10)\nMission Reward (x5)
-		Black Tallow				Mission Reward (x5)\nPoint Rewards (x10)
+	Items
+		Saint Quartz	Main Quest (x6)
+		Summon Ticket	Main Quest\nPoint Rewards (x5)\nMission Rewards (x5)
+		Crystallized Lore	Main Quest\nPoint Rewards (x3)\nMission Rewards
+		Golden Fruit	Point Rewards (x10)
+		Silver Fruit	Point Rewards (x10)
+		Bronze Fruit	Point Rewards (x10)
+		===
+		Materials
+			Evil Bone					Mission Rewards (x5)
+			Dragon Fang					Mission Rewards (x5)\nShop (x20)
+			Void's Dust					Mission Rewards (x5)\nShop (x20)
+			Seed of Yggdrasil			Mission Rewards (x5)
+			Ghost Lantern				Point Rewards (x20)
+			Octuplet Crystals			Mission Rewards (x5)
+			Serpent Jewel				Shop (x20)
+			Phoenix Feather				Mission Rewards (x5)
+			Eternal Gear				Mission Rewards (x5)
+			Forbidden Page				Mission Rewards (x5)
+			Homunculus Baby				Point Rewards (x20)
+			Meteor Horseshoe			Mission Rewards (x5)
+			Claw of Chaos				Point Rewards (x20)\nMission Rewards (x5)
+			Heart of the Foreign God	Mission Rewards (x5)\nShop (x10)
+			Dragon's Reverse Scale		Point Rewards (x20)\nMission Rewards (x5)
+			Spirit Root					Point Rewards (x10)
+			Tearstone of Blood			Mission Rewards (x5)\nShop (x10)
+			Black Beast Grease			Point Rewards (x10)\nMission Rewards (x5)
+		===
+		Monuments
+			Rider Monument		Shop (x20)
+			Rider Piece			Shop (x20)
+			Assassin Monument	Shop (x20)
+			Assassin Piece		Shop (x20)
+			Berserker Monument	Shop (x20)
+			Berserker Piece		Shop (x20)
+		===
+		Misc
+			Hero Crystal: Star Fou	Shop (x20)
+			Hero Crystal: Sun Fou	Shop (x20)
+			Blaze of Wisdom	Shop (x100)
+			Fire of Wisdom	Shop (x100)
+			Mana Prism		Point Rewards (x650)\nMission Rewards (x420)\nShop (x500)
+			QP				Point Rewards (50mil)\nShop
 	Note: Shuten Douji is a limited servant
 
 Starry Sanzang Goes to India
@@ -1679,7 +1812,7 @@ The Second Generation is Alter-chan ~2016 Christmas~
 	JP: Nov. 28th ~ Dec. 7th, 2016
 	URL: http://fate-go.cirnopedia.org/quest_event_20161128.php#nav
 	Event Servants
-				   Name               Currency Bonus
+		           Name               Currency Bonus
 		Ishtar							Fruitcake
 			[1]rowspan="3"
 		Jeanne d'Arc Santa Alter Lily
